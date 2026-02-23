@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
-import { Bell, ChevronDown, GraduationCap, Lock, Save, User } from "lucide-react"
+import { Bell, ChevronDown, Lock, Save, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -37,8 +38,13 @@ export default function SettingsPage() {
       <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
         <div className="flex items-center gap-2">
           <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
-            <GraduationCap className="h-6 w-6" />
-            <span className="hidden md:inline-block">Little Learners</span>
+            <Image
+              src="/logo.jpg"
+              alt="Bayhood Preparatory School logo"
+              width={220}
+              height={66}
+              className="h-14 w-auto"
+            />
           </Link>
         </div>
         <div className="flex-1"></div>
@@ -195,11 +201,14 @@ export default function SettingsPage() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="school-name">School Name</Label>
-                    <Input id="school-name" defaultValue="Little Learners" />
+                    <Input id="school-name" defaultValue="Bayhood Preparatory School" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="address">Address</Label>
-                    <Input id="address" defaultValue="123 Learning Lane, Education City, EC 12345" />
+                    <Input
+                      id="address"
+                      defaultValue="House 20, Road 18 Diamond Estate, Idimu, Lagos 100275"
+                    />
                   </div>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
@@ -208,12 +217,12 @@ export default function SettingsPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
-                      <Input id="email" type="email" defaultValue="info@littlelearners.edu" />
+                      <Input id="email" type="email" defaultValue="info@baythoodpreparatory.edu" />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="website">Website</Label>
-                    <Input id="website" defaultValue="https://littlelearners.edu" />
+                    <Input id="website" defaultValue="https://baythoodpreparatory.edu" />
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-end">
@@ -490,4 +499,3 @@ export default function SettingsPage() {
     </div>
   )
 }
-

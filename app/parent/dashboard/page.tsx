@@ -1,20 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
-import {
-  BarChart3,
-  BookOpen,
-  ChevronDown,
-  Download,
-  FileText,
-  GraduationCap,
-  Home,
-  LogOut,
-  Menu,
-  Settings,
-  User,
-} from "lucide-react"
+import { BarChart3, BookOpen, ChevronDown, Download, FileText, Home, LogOut, Menu, Settings, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,8 +20,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 // Sample student data
 const studentData = {
-  name: "Alex Johnson",
-  id: "LL-2023-042",
+  name: "Agboola Jasmine",
+  id: "BH-N2-001",
   class: "Nursery 2",
   term: "Term 2",
   results: [
@@ -135,8 +124,13 @@ export default function ParentDashboard() {
                 className="flex items-center gap-2 text-lg font-semibold"
                 onClick={() => setIsMobileNavOpen(false)}
               >
-                <GraduationCap className="h-6 w-6" />
-                <span>Little Learners</span>
+                <Image
+                  src="/logo.jpg"
+                  alt="Bayhood Preparatory School logo"
+                  width={220}
+                  height={66}
+                  className="h-14 w-auto"
+                />
               </Link>
               <div className="grid gap-3">
                 <Link
@@ -169,8 +163,13 @@ export default function ParentDashboard() {
         </Sheet>
         <div className="flex items-center gap-2">
           <Link href="/parent/dashboard" className="flex items-center gap-2 font-semibold">
-            <GraduationCap className="h-6 w-6" />
-            <span className="hidden md:inline-block">Little Learners</span>
+            <Image
+              src="/logo.jpg"
+              alt="Bayhood Preparatory School logo"
+              width={220}
+              height={66}
+              className="h-14 w-auto"
+            />
           </Link>
         </div>
         <div className="flex-1"></div>
@@ -416,4 +415,3 @@ export default function ParentDashboard() {
     </div>
   )
 }
-

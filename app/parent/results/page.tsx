@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
-import { ChevronDown, Download, FileText, Filter, GraduationCap, Search, User } from "lucide-react"
+import { ChevronDown, Download, FileText, Filter, Plus, Search, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,15 +23,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 // Sample children data for the parent
 const childrenData = [
   {
-    id: "LL-2023-001",
-    name: "John Smith",
+    id: "BH-N2-001",
+    name: "Agboola Jasmine",
     class: "Nursery 2",
     age: 4,
-    gender: "Male",
+    gender: "Female",
   },
   {
-    id: "LL-2023-042",
-    name: "Sarah Smith",
+    id: "BH-N1-002",
+    name: "Adedoyin Judith",
     class: "Nursery 1",
     age: 3,
     gender: "Female",
@@ -41,8 +42,8 @@ const childrenData = [
 const resultsData = [
   {
     id: "R001",
-    studentId: "LL-2023-001",
-    studentName: "John Smith",
+    studentId: "BH-N2-001",
+    studentName: "Agboola Jasmine",
     class: "Nursery 2",
     term: "Term 2",
     averageScore: 78.5,
@@ -52,8 +53,8 @@ const resultsData = [
   },
   {
     id: "R002",
-    studentId: "LL-2023-001",
-    studentName: "John Smith",
+    studentId: "BH-N2-001",
+    studentName: "Agboola Jasmine",
     class: "Nursery 2",
     term: "Term 1",
     averageScore: 82.3,
@@ -63,8 +64,8 @@ const resultsData = [
   },
   {
     id: "R003",
-    studentId: "LL-2023-042",
-    studentName: "Sarah Smith",
+    studentId: "BH-N1-002",
+    studentName: "Adedoyin Judith",
     class: "Nursery 1",
     term: "Term 2",
     averageScore: 85.8,
@@ -74,8 +75,8 @@ const resultsData = [
   },
   {
     id: "R004",
-    studentId: "LL-2023-042",
-    studentName: "Sarah Smith",
+    studentId: "BH-N1-002",
+    studentName: "Adedoyin Judith",
     class: "Nursery 1",
     term: "Term 1",
     averageScore: 79.2,
@@ -107,8 +108,13 @@ export default function ParentResultsPage() {
       <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
         <div className="flex items-center gap-2">
           <Link href="/parent/dashboard" className="flex items-center gap-2 font-semibold">
-            <GraduationCap className="h-6 w-6" />
-            <span className="hidden md:inline-block">Little Learners</span>
+            <Image
+              src="/logo.jpg"
+              alt="Bayhood Preparatory School logo"
+              width={220}
+              height={66}
+              className="h-14 w-auto"
+            />
           </Link>
         </div>
         <div className="flex-1"></div>
@@ -296,9 +302,11 @@ export default function ParentResultsPage() {
                                       <span className="sr-only">View</span>
                                     </Link>
                                   </Button>
-                                  <Button variant="outline" size="icon">
-                                    <Download className="h-4 w-4" />
-                                    <span className="sr-only">Download</span>
+                                  <Button variant="outline" size="icon" asChild>
+                                    <Link href={`/parent/results/${result.id}?download=1`} target="_blank">
+                                      <Download className="h-4 w-4" />
+                                      <span className="sr-only">Download</span>
+                                    </Link>
                                   </Button>
                                 </div>
                               </TableCell>
@@ -358,4 +366,3 @@ export default function ParentResultsPage() {
     </div>
   )
 }
-

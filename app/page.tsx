@@ -9,10 +9,15 @@ export default function Home() {
     <div className="flex min-h-screen flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
+        <div className="container flex h-20 items-center justify-between">
           <div className="flex items-center gap-2">
-            <GraduationCap className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold">Little Learners</span>
+            <Image
+              src="/logo.jpg"
+              alt="School logo"
+              width={220}
+              height={66}
+              className="h-14 w-auto"
+            />
           </div>
           <nav className="hidden md:flex gap-6">
             <Link href="/" className="text-sm font-medium hover:text-primary">
@@ -54,7 +59,7 @@ export default function Home() {
                   Where Learning Begins with Love and Care
                 </h1>
                 <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Little Learners provides a safe, nurturing environment where children can explore, learn, and grow.
+                  Bayhood Preperatory School provides a safe, nurturing environment where children can explore, learn, and grow.
                   Our dedicated staff and innovative curriculum ensure your child gets the best start in life.
                 </p>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -91,10 +96,10 @@ export default function Home() {
               <div className="space-y-2">
                 <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary">Our Approach</div>
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  Why Choose Little Learners?
+                  Why Choose Bayhood Preperatory School ?
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  We combine play-based learning with structured activities to create a balanced educational experience.
+                  We combine play based learning with structured activities to create a balanced educational experience.
                 </p>
               </div>
             </div>
@@ -144,11 +149,11 @@ export default function Home() {
                 <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary">Our Programs</div>
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Educational Programs</h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  We offer age-appropriate programs designed to nurture your child's development.
+                  We offer age appropriate programs designed to nurture your child's development.
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-5xl gap-6 py-12 lg:grid-cols-3">
+            <div className="mx-auto grid max-w-5xl gap-6 py-12 lg:grid-cols-4">
               <div className="group relative overflow-hidden rounded-lg border bg-background shadow-sm transition-all hover:shadow-md">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80 z-10"></div>
                 <Image
@@ -167,7 +172,7 @@ export default function Home() {
                   <div className="mt-4 flex flex-wrap gap-2">
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Clock className="mr-1 h-4 w-4" />
-                      <span>7:30 AM - 6:00 PM</span>
+                      <span>7:00 AM - 1:00 PM</span>
                     </div>
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Calendar className="mr-1 h-4 w-4" />
@@ -197,7 +202,7 @@ export default function Home() {
                   <div className="mt-4 flex flex-wrap gap-2">
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Clock className="mr-1 h-4 w-4" />
-                      <span>8:00 AM - 3:00 PM</span>
+                      <span>7:00 AM - 3:00 PM</span>
                     </div>
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Calendar className="mr-1 h-4 w-4" />
@@ -219,15 +224,44 @@ export default function Home() {
                   className="h-60 w-full object-cover transition-transform group-hover:scale-105"
                 />
                 <div className="relative z-20 p-6 pt-0 mt-[-40px]">
-                  <h3 className="text-2xl font-bold">Nursery 2</h3>
+                  <h3 className="text-2xl font-bold">Preschool</h3>
                   <p className="mt-2 text-muted-foreground">
-                    For children aged 3-4 years. Building pre-academic foundations, language development, and creative
-                    expression.
+                    For children in Preschool 1 and 2 (ages 3-5). Strengthens pre-reading, writing, and early
+                    mathematics through structured play.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Clock className="mr-1 h-4 w-4" />
-                      <span>8:00 AM - 3:00 PM</span>
+                      <span>7:00 AM - 3:00 PM</span>
+                    </div>
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Calendar className="mr-1 h-4 w-4" />
+                      <span>Mon - Fri</span>
+                    </div>
+                  </div>
+                  <Button variant="outline" className="mt-4 w-full">
+                    Learn More
+                  </Button>
+                </div>
+              </div>
+              <div className="group relative overflow-hidden rounded-lg border bg-background shadow-sm transition-all hover:shadow-md">
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80 z-10"></div>
+                <Image
+                  src="/placeholder.svg?height=400&width=600"
+                  width={600}
+                  height={400}
+                  alt="Playgroup program"
+                  className="h-60 w-full object-cover transition-transform group-hover:scale-105"
+                />
+                <div className="relative z-20 p-6 pt-0 mt-[-40px]">
+                  <h3 className="text-2xl font-bold">Playgroup</h3>
+                  <p className="mt-2 text-muted-foreground">
+                    Gentle introduction to school with short days focused on social skills, music, and guided play.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Clock className="mr-1 h-4 w-4" />
+                      <span>8:00 AM - 12:00 PM</span>
                     </div>
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Calendar className="mr-1 h-4 w-4" />
@@ -379,23 +413,23 @@ export default function Home() {
                 <div className="space-y-2">
                   <h3 className="text-xl font-bold">Visit Us</h3>
                   <p className="text-muted-foreground">
-                    123 Learning Lane
+                    House 20,Road 18 Diamond Estate 
                     <br />
-                    Education City, EC 12345
+                     Idimu,Lagos 100275
                   </p>
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-xl font-bold">Contact Information</h3>
                   <p className="text-muted-foreground">
-                    Phone: (123) 456-7890
+                    Phone: 0809 811 2378
                     <br />
-                    Email: info@littlelearners.edu
+                    Email: bayhoodpreperatoryschool@gmail.com
                   </p>
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-xl font-bold">Hours of Operation</h3>
                   <p className="text-muted-foreground">
-                    Monday - Friday: 7:30 AM - 6:00 PM
+                    Monday - Friday: 7:00 AM - 6:00 PM
                     <br />
                     Saturday - Sunday: Closed
                   </p>
@@ -471,25 +505,24 @@ export default function Home() {
         <div className="container flex flex-col items-center justify-center gap-4 px-4 md:px-6 md:flex-row md:justify-between">
           <div className="flex items-center gap-2">
             <GraduationCap className="h-6 w-6 text-primary" />
-            <span className="text-lg font-bold">Little Learners</span>
+            <span className="text-lg font-bold">Bayhood Preparatory School</span>
           </div>
           <nav className="flex gap-4 sm:gap-6">
-            <Link href="#" className="text-xs hover:underline underline-offset-4">
+            <Link href="/terms" className="text-xs hover:underline underline-offset-4">
               Terms of Service
             </Link>
-            <Link href="#" className="text-xs hover:underline underline-offset-4">
+            <Link href="/privacy" className="text-xs hover:underline underline-offset-4">
               Privacy
             </Link>
-            <Link href="#" className="text-xs hover:underline underline-offset-4">
+            <Link href="/cookies" className="text-xs hover:underline underline-offset-4">
               Cookies
             </Link>
           </nav>
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Little Learners. All rights reserved.
+            © {new Date().getFullYear()} Bayhood Preparatory School. All rights reserved.
           </p>
         </div>
       </footer>
     </div>
   )
 }
-

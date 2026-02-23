@@ -1,7 +1,9 @@
 "use client"
+import { useEffect } from "react"
+import Image from "next/image"
 import Link from "next/link"
-import { useParams } from "next/navigation"
-import { ArrowLeft, ChevronDown, Download, GraduationCap, Printer, User } from "lucide-react"
+import { useParams, useSearchParams } from "next/navigation"
+import { ArrowLeft, ChevronDown, Download, Printer, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,8 +23,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 // Sample result data
 const resultDetails = {
   id: "R001",
-  studentId: "LL-2023-001",
-  studentName: "John Smith",
+  studentId: "BH-N2-001",
+  studentName: "Agboola Jasmine",
   class: "Nursery 2",
   term: "Term 2",
   academicYear: "2023-2024",
@@ -32,7 +34,7 @@ const resultDetails = {
   status: "Published",
   teacherComment:
     "John has shown remarkable improvement in his reading skills. He actively participates in class activities and is always eager to learn. He should continue to work on his handwriting.",
-  principalComment: "Well done, John! Keep up the good work and continue to strive for excellence.",
+  principalComment: "Well done, Jasmine! Keep up the good work and continue to strive for excellence.",
   subjects: [
     { name: "English Language", score: 85, grade: "A", comment: "Excellent reading and comprehension skills" },
     { name: "Mathematics", score: 78, grade: "A", comment: "Good understanding of basic arithmetic" },
@@ -60,6 +62,7 @@ const resultDetails = {
 
 export default function ResultDetailPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const resultId = params.id
 
   // In a real application, you would fetch the result data based on the ID
@@ -69,13 +72,24 @@ export default function ResultDetailPage() {
     window.print()
   }
 
+  useEffect(() => {
+    if (searchParams?.get("download") === "1") {
+      handlePrint()
+    }
+  }, [searchParams])
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 print:hidden">
         <div className="flex items-center gap-2">
           <Link href="/parent/dashboard" className="flex items-center gap-2 font-semibold">
-            <GraduationCap className="h-6 w-6" />
-            <span className="hidden md:inline-block">Little Learners</span>
+            <Image
+              src="/logo.jpg"
+              alt="Bayhood Preparatory School logo"
+              width={220}
+              height={66}
+              className="h-14 w-auto"
+            />
           </Link>
         </div>
         <div className="flex-1"></div>
@@ -180,7 +194,7 @@ export default function ResultDetailPage() {
                 <Printer className="mr-2 h-4 w-4" />
                 Print
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handlePrint}>
                 <Download className="mr-2 h-4 w-4" />
                 Download PDF
               </Button>
@@ -190,10 +204,17 @@ export default function ResultDetailPage() {
           <div className="print:mt-0">
             <div className="text-center mb-6 print:mb-4">
               <div className="flex items-center justify-center mb-2">
-                <GraduationCap className="h-8 w-8 mr-2" />
-                <h1 className="text-2xl font-bold">Little Learners Academy</h1>
+                <Image
+                  src="/logo.jpg"
+                  alt="Bayhood Preparatory School logo"
+                  width={280}
+                  height={84}
+                  className="h-16 w-auto"
+                />
               </div>
-              <p className="text-muted-foreground">123 Learning Lane, Education City, EC 12345</p>
+              <p className="text-muted-foreground">
+                House 20, Road 18 Diamond Estate, Idimu, Lagos 100275
+              </p>
               <h2 className="text-xl font-semibold mt-4">End of Term Report Card</h2>
             </div>
 
@@ -442,7 +463,7 @@ export default function ResultDetailPage() {
                   <p>Report Date: {resultDetails.date}</p>
                 </div>
                 <div>
-                  <p>Little Learners Academy - Nurturing Tomorrow's Leaders</p>
+                  <p>Bayhood Preparatory School - Nurturing Tomorrow's Leaders</p>
                 </div>
               </div>
             </div>
@@ -452,4 +473,3 @@ export default function ResultDetailPage() {
     </div>
   )
 }
-

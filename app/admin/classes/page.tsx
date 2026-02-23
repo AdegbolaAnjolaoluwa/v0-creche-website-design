@@ -3,8 +3,9 @@
 import type React from "react"
 
 import { useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
-import { BookOpen, ChevronDown, Edit, GraduationCap, Plus, Trash, User, Users } from "lucide-react"
+import { BookOpen, ChevronDown, Edit, Plus, Trash, User, Users } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,15 +30,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
-// Sample classes data
-const classesData = [
+export const classesData = [
   {
     id: "class-001",
     name: "Creche",
     description:
       "For children aged 3 months to 2 years. Focused on nurturing care, sensory play, and early development milestones.",
     ageRange: "3 months - 2 years",
-    teacherName: "Ms. Rebecca Johnson",
+    teacherName: "Alexander Anwangbasi Joy",
     studentCount: 18,
     subjects: ["Motor Skills", "Social Interaction", "Basic Recognition", "Sensory Development"],
   },
@@ -47,7 +47,7 @@ const classesData = [
     description:
       "For children aged 2-3 years. Introducing structured learning through play, basic concepts, and social skills.",
     ageRange: "2-3 years",
-    teacherName: "Ms. Sarah Williams",
+    teacherName: "Adegoke Oluwatosin Elizabeth",
     studentCount: 28,
     subjects: ["Alphabets", "Numbers", "Coloring", "Rhymes", "Basic Writing", "Social Skills"],
   },
@@ -57,7 +57,7 @@ const classesData = [
     description:
       "For children aged 3-4 years. Building pre-academic foundations, language development, and creative expression.",
     ageRange: "3-4 years",
-    teacherName: "Mr. David Thompson",
+    teacherName: "Teniola Fetinoluwa Christiana",
     studentCount: 32,
     subjects: [
       "Reading",
@@ -69,6 +69,36 @@ const classesData = [
       "Physical Education",
       "Music",
     ],
+  },
+  {
+    id: "class-004",
+    name: "Playgroup",
+    description:
+      "An introductory program that helps children adjust to school routines through guided play and social interaction.",
+    ageRange: "18 months - 3 years",
+    teacherName: "Fagade Samuel",
+    studentCount: 16,
+    subjects: ["Free Play", "Circle Time", "Music & Movement", "Outdoor Play"],
+  },
+  {
+    id: "class-005",
+    name: "Preschool 1",
+    description:
+      "For children progressing from playgroup. Focused on language development, number sense, and social confidence.",
+    ageRange: "3-4 years",
+    teacherName: "Akinnade Oluwafemi",
+    studentCount: 20,
+    subjects: ["Pre-reading", "Pre-writing", "Numbers", "Practical Life", "Rhymes", "Story Time"],
+  },
+  {
+    id: "class-006",
+    name: "Preschool 2",
+    description:
+      "For children preparing to enter Nursery 1. Reinforces pre-academic skills, independence, and classroom routines.",
+    ageRange: "4-5 years",
+    teacherName: "Damisa Yetunde Halimat",
+    studentCount: 22,
+    subjects: ["Reading Readiness", "Writing Readiness", "Mathematics Concepts", "Science Exploration", "Art & Music"],
   },
 ]
 
@@ -109,8 +139,13 @@ export default function ClassesPage() {
       <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
         <div className="flex items-center gap-2">
           <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
-            <GraduationCap className="h-6 w-6" />
-            <span className="hidden md:inline-block">Little Learners</span>
+            <Image
+              src="/logo.jpg"
+              alt="Bayhood Preparatory School logo"
+              width={220}
+              height={66}
+              className="h-14 w-auto"
+            />
           </Link>
         </div>
         <div className="flex-1"></div>
@@ -407,4 +442,3 @@ export default function ClassesPage() {
     </div>
   )
 }
-

@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { GraduationCap, Mail, MapPin, Phone } from "lucide-react"
+import Image from "next/image"
+import { Mail, MapPin, Phone } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,8 +14,13 @@ export default function ContactPage() {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <GraduationCap className="h-6 w-6" />
-          <span>Little Learners</span>
+          <Image
+            src="/logo.jpg"
+            alt="Bayhood Preparatory School logo"
+            width={220}
+            height={66}
+            className="h-14 w-auto"
+          />
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           <Link href="/" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
@@ -72,7 +78,11 @@ export default function ContactPage() {
                     <MapPin className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
                     <div>
                       <h3 className="font-medium">Address</h3>
-                      <p className="text-sm text-muted-foreground">123 Learning Lane, Education City, EC 12345</p>
+                      <p className="text-sm text-muted-foreground">
+                        House 20, Road 18 Diamond Estate
+                        <br />
+                        Idimu, Lagos 100275
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
@@ -86,7 +96,7 @@ export default function ContactPage() {
                     <Mail className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
                     <div>
                       <h3 className="font-medium">Email</h3>
-                      <p className="text-sm text-muted-foreground">info@littlelearners.edu</p>
+                      <p className="text-sm text-muted-foreground">info@baythoodpreparatory.edu</p>
                     </div>
                   </div>
                 </div>
@@ -225,8 +235,13 @@ export default function ContactPage() {
         <div className="container flex flex-col gap-6 py-8 md:flex-row md:items-center md:justify-between md:py-12">
           <div className="flex flex-col gap-2">
             <Link href="/" className="flex items-center gap-2 font-semibold">
-              <GraduationCap className="h-6 w-6" />
-              <span>Little Learners</span>
+              <Image
+                src="/logo.jpg"
+                alt="Bayhood Preparatory School logo"
+                width={220}
+                height={66}
+                className="h-14 w-auto"
+              />
             </Link>
             <p className="text-sm text-muted-foreground">Nurturing young minds since 2010</p>
           </div>
@@ -250,10 +265,9 @@ export default function ContactPage() {
               Contact
             </Link>
           </nav>
-          <div className="text-sm text-muted-foreground">© 2023 Little Learners. All rights reserved.</div>
+          <div className="text-sm text-muted-foreground">© 2023 Bayhood Preparatory School. All rights reserved.</div>
         </div>
       </footer>
     </div>
   )
 }
-

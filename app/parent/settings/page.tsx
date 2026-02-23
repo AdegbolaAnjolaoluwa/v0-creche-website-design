@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
-import { Bell, ChevronDown, GraduationCap, Lock, Save, User } from "lucide-react"
+import { Bell, ChevronDown, Lock, Save, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -36,8 +37,13 @@ export default function ParentSettingsPage() {
       <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
         <div className="flex items-center gap-2">
           <Link href="/parent/dashboard" className="flex items-center gap-2 font-semibold">
-            <GraduationCap className="h-6 w-6" />
-            <span className="hidden md:inline-block">Little Learners</span>
+            <Image
+              src="/logo.jpg"
+              alt="Bayhood Preparatory School logo"
+              width={220}
+              height={66}
+              className="h-14 w-auto"
+            />
           </Link>
         </div>
         <div className="flex-1"></div>
@@ -169,7 +175,10 @@ export default function ParentSettingsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="address">Address</Label>
-                    <Input id="address" defaultValue="123 Main Street, Anytown, AT 12345" />
+                    <Input
+                      id="address"
+                      defaultValue="House 20, Road 18 Diamond Estate, Idimu, Lagos 100275"
+                    />
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-end">
@@ -377,17 +386,17 @@ export default function ParentSettingsPage() {
                     <div className="rounded-md border p-4">
                       <div className="flex flex-col sm:flex-row justify-between gap-4">
                         <div>
-                          <h3 className="text-lg font-semibold">John Smith</h3>
-                          <p className="text-sm text-muted-foreground">ID: LL-2023-001</p>
+                          <h3 className="text-lg font-semibold">Agboola Jasmine</h3>
+                          <p className="text-sm text-muted-foreground">ID: BH-N2-001</p>
                           <div className="mt-2 space-y-1">
                             <p className="text-sm">Class: Nursery 2</p>
                             <p className="text-sm">Age: 4 years</p>
-                            <p className="text-sm">Gender: Male</p>
+                            <p className="text-sm">Gender: Female</p>
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 sm:text-right">
                           <Button variant="outline" size="sm" asChild>
-                            <Link href="/parent/results?child=LL-2023-001">View Results</Link>
+                            <Link href="/parent/results?child=BH-N2-001">View Results</Link>
                           </Button>
                           <Button variant="outline" size="sm">
                             Update Information
@@ -399,8 +408,8 @@ export default function ParentSettingsPage() {
                     <div className="rounded-md border p-4">
                       <div className="flex flex-col sm:flex-row justify-between gap-4">
                         <div>
-                          <h3 className="text-lg font-semibold">Sarah Smith</h3>
-                          <p className="text-sm text-muted-foreground">ID: LL-2023-042</p>
+                          <h3 className="text-lg font-semibold">Adedoyin Judith</h3>
+                          <p className="text-sm text-muted-foreground">ID: BH-N1-002</p>
                           <div className="mt-2 space-y-1">
                             <p className="text-sm">Class: Nursery 1</p>
                             <p className="text-sm">Age: 3 years</p>
@@ -409,7 +418,7 @@ export default function ParentSettingsPage() {
                         </div>
                         <div className="flex flex-col gap-2 sm:text-right">
                           <Button variant="outline" size="sm" asChild>
-                            <Link href="/parent/results?child=LL-2023-042">View Results</Link>
+                            <Link href="/parent/results?child=BH-N1-002">View Results</Link>
                           </Button>
                           <Button variant="outline" size="sm">
                             Update Information
@@ -432,4 +441,3 @@ export default function ParentSettingsPage() {
     </div>
   )
 }
-

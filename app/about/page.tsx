@@ -167,10 +167,10 @@ export default function AboutPage() {
                 <CardHeader>
                   <img
                     src="/placeholder.svg?height=200&width=200"
-                    alt="Mr. David Wilson"
+                    alt="Damisa Yetunde Halimat"
                     className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
                   />
-                  <CardTitle className="text-center">Mr. David Wilson</CardTitle>
+                  <CardTitle className="text-center">Damisa Yetunde Halimat</CardTitle>
                   <CardDescription className="text-center">Head Teacher, Nursery 2</CardDescription>
                 </CardHeader>
                 <CardContent className="text-center">
@@ -184,10 +184,10 @@ export default function AboutPage() {
                 <CardHeader>
                   <img
                     src="/placeholder.svg?height=200&width=200"
-                    alt="Ms. Sarah Williams"
+                    alt="Omotosho Mary"
                     className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
                   />
-                  <CardTitle className="text-center">Ms. Sarah Williams</CardTitle>
+                  <CardTitle className="text-center">Omotosho Mary</CardTitle>
                   <CardDescription className="text-center">Head Teacher, Nursery 1</CardDescription>
                 </CardHeader>
                 <CardContent className="text-center">
@@ -277,4 +277,3 @@ export default function AboutPage() {
     </div>
   )
 }
-

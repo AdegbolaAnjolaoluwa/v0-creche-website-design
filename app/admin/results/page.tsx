@@ -1,9 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { ChevronDown, Download, FileText, Filter, GraduationCap, Plus, Search, Trash, User } from "lucide-react"
+import { ChevronDown, Download, FileText, Filter, Plus, Search, Trash, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,13 +18,37 @@ import {
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
-// Sample results data
-const resultsData = [
+export type ResultRecord = {
+  id: string
+  studentId: string
+  studentName: string
+  class: string
+  term: string
+  averageScore: number
+  grade: string
+  date: string
+  status: string
+  attendancePercentage?: number
+  attendanceScore?: number
+  finalScore?: number
+}
+
+const RESULTS_STORAGE_KEY = "adminResults"
+
+export const resultsData: ResultRecord[] = [
   {
     id: "R001",
-    studentId: "LL-2023-001",
-    studentName: "John Smith",
+    studentId: "BH-N2-001",
+    studentName: "Agboola Jasmine",
     class: "Nursery 2",
     term: "Term 2",
     averageScore: 78.5,
@@ -34,8 +58,8 @@ const resultsData = [
   },
   {
     id: "R002",
-    studentId: "LL-2023-015",
-    studentName: "Emma Johnson",
+    studentId: "BH-N1-002",
+    studentName: "Adedoyin Judith",
     class: "Nursery 1",
     term: "Term 2",
     averageScore: 82.3,
@@ -45,9 +69,9 @@ const resultsData = [
   },
   {
     id: "R003",
-    studentId: "LL-2023-022",
-    studentName: "Michael Brown",
-    class: "Creche",
+    studentId: "BH-PS2-003",
+    studentName: "Kareem Jayden",
+    class: "Preschool 2",
     term: "Term 2",
     averageScore: 65.8,
     grade: "B",
@@ -56,8 +80,8 @@ const resultsData = [
   },
   {
     id: "R004",
-    studentId: "LL-2023-008",
-    studentName: "Sophia Davis",
+    studentId: "BH-N2-006",
+    studentName: "Fakude Mabel",
     class: "Nursery 2",
     term: "Term 2",
     averageScore: 91.2,
@@ -67,8 +91,8 @@ const resultsData = [
   },
   {
     id: "R005",
-    studentId: "LL-2023-037",
-    studentName: "James Wilson",
+    studentId: "BH-N1-005",
+    studentName: "Ohiomah Divine",
     class: "Nursery 1",
     term: "Term 2",
     averageScore: 73.9,
@@ -78,9 +102,9 @@ const resultsData = [
   },
   {
     id: "R006",
-    studentId: "LL-2023-042",
-    studentName: "Alex Johnson",
-    class: "Nursery 2",
+    studentId: "BH-PS1-002",
+    studentName: "Adeyemo Micah",
+    class: "Preschool 1",
     term: "Term 2",
     averageScore: 76.8,
     grade: "A",
@@ -89,9 +113,9 @@ const resultsData = [
   },
   {
     id: "R007",
-    studentId: "LL-2023-019",
-    studentName: "Olivia Martinez",
-    class: "Nursery 1",
+    studentId: "BH-PG-005",
+    studentName: "Okonkwo Marvelous",
+    class: "Playgroup",
     term: "Term 2",
     averageScore: 68.5,
     grade: "B",
@@ -100,9 +124,9 @@ const resultsData = [
   },
   {
     id: "R008",
-    studentId: "LL-2023-031",
-    studentName: "Daniel Thompson",
-    class: "Creche",
+    studentId: "BH-PG-002",
+    studentName: "Innocent Nathan",
+    class: "Playgroup",
     term: "Term 2",
     averageScore: 0,
     grade: "",
@@ -111,15 +135,44 @@ const resultsData = [
   },
 ]
 
+const loadResultsFromStorage = (): ResultRecord[] => {
+  if (typeof window === "undefined") return resultsData
+  const stored = window.localStorage.getItem(RESULTS_STORAGE_KEY)
+  if (!stored) {
+    window.localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(resultsData))
+    return resultsData
+  }
+  try {
+    const parsed = JSON.parse(stored) as ResultRecord[]
+    if (!Array.isArray(parsed)) {
+      return resultsData
+    }
+    return parsed
+  } catch {
+    return resultsData
+  }
+}
+
+export const calculateAttendanceScore = (attendancePercentage: number) => {
+  if (attendancePercentage >= 95) return 10
+  if (attendancePercentage >= 90) return 8
+  if (attendancePercentage >= 80) return 6
+  if (attendancePercentage >= 70) return 4
+  return 2
+}
+
+export const calculateFinalScore = (academicScore: number, attendanceScore: number) => academicScore + attendanceScore
+
 export default function ResultsPage() {
-  const router = useRouter()
+  const [results, setResults] = useState<ResultRecord[]>(() => loadResultsFromStorage())
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedClass, setSelectedClass] = useState("all")
   const [selectedTerm, setSelectedTerm] = useState("all")
   const [selectedStatus, setSelectedStatus] = useState("all")
+  const [isDeleteResultOpen, setIsDeleteResultOpen] = useState(false)
+  const [resultToDelete, setResultToDelete] = useState<{ id: string; studentName: string } | null>(null)
 
-  // Filter results based on search and filters
-  const filteredResults = resultsData.filter((result) => {
+  const filteredResults = results.filter((result) => {
     const matchesSearch =
       result.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       result.studentId.toLowerCase().includes(searchTerm.toLowerCase())
@@ -131,13 +184,41 @@ export default function ResultsPage() {
     return matchesSearch && matchesClass && matchesTerm && matchesStatus
   })
 
+  const handleDeleteClick = (result: (typeof resultsData)[number]) => {
+    setResultToDelete({ id: result.id, studentName: result.studentName })
+    setIsDeleteResultOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!resultToDelete) return
+    setResults((prev) => {
+      const updated = prev.filter((result) => result.id !== resultToDelete.id)
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(updated))
+      }
+      return updated
+    })
+    setIsDeleteResultOpen(false)
+    setResultToDelete(null)
+  }
+
+  const handleCancelDelete = () => {
+    setIsDeleteResultOpen(false)
+    setResultToDelete(null)
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
         <div className="flex items-center gap-2">
           <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
-            <GraduationCap className="h-6 w-6" />
-            <span className="hidden md:inline-block">Little Learners</span>
+            <Image
+              src="/logo.jpg"
+              alt="Bayhood Preparatory School logo"
+              width={220}
+              height={66}
+              className="h-14 w-auto"
+            />
           </Link>
         </div>
         <div className="flex-1"></div>
@@ -264,7 +345,7 @@ export default function ResultsPage() {
               <h1 className="text-2xl font-bold tracking-tight">Results</h1>
               <p className="text-muted-foreground">Manage and view all student results</p>
             </div>
-            <div className="flex-1 grid gap-4 md:grid-cols-2 lg:grid-cols-3 md:gap-8 md:ml-auto">
+            <div className="flex-1 grid gap-4 md:grid-cols-2 lg:grid-cols-2 md:gap-8 md:ml-auto">
               <div className="flex items-center gap-2">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <Input
@@ -283,17 +364,14 @@ export default function ResultsPage() {
                   <SelectContent>
                     <SelectItem value="all">All Classes</SelectItem>
                     <SelectItem value="Creche">Creche</SelectItem>
+                    <SelectItem value="Playgroup">Playgroup</SelectItem>
+                    <SelectItem value="Preschool 1">Preschool 1</SelectItem>
+                    <SelectItem value="Preschool 2">Preschool 2</SelectItem>
                     <SelectItem value="Nursery 1">Nursery 1</SelectItem>
                     <SelectItem value="Nursery 2">Nursery 2</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <Link href="/admin/results/new" className="flex md:justify-end">
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add New Result
-                </Button>
-              </Link>
             </div>
           </div>
 
@@ -337,6 +415,8 @@ export default function ResultsPage() {
                       <TableHead>Class</TableHead>
                       <TableHead>Term</TableHead>
                       <TableHead className="text-center">Average</TableHead>
+                      <TableHead className="text-center">Attendance</TableHead>
+                      <TableHead className="text-center">Final Score</TableHead>
                       <TableHead className="text-center">Grade</TableHead>
                       <TableHead className="text-center">Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -352,6 +432,16 @@ export default function ResultsPage() {
                           <TableCell>{result.term}</TableCell>
                           <TableCell className="text-center">
                             {result.status === "Draft" ? "-" : `${result.averageScore.toFixed(1)}%`}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {result.status === "Draft" || result.attendancePercentage == null
+                              ? "-"
+                              : `${result.attendancePercentage.toFixed(1)}%`}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {result.status === "Draft" || result.finalScore == null
+                              ? "-"
+                              : result.finalScore.toFixed(1)}
                           </TableCell>
                           <TableCell className="text-center">
                             {result.status === "Draft" ? (
@@ -388,18 +478,16 @@ export default function ResultsPage() {
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button variant="outline" size="icon" asChild>
-                                <Link href={`/admin/results/${result.id}`}>
+                                <Link href={`/parent/results/${result.id}`}>
                                   <FileText className="h-4 w-4" />
                                   <span className="sr-only">View</span>
                                 </Link>
                               </Button>
-                              <Button variant="outline" size="icon">
-                                <Download className="h-4 w-4" />
-                                <span className="sr-only">Download</span>
-                              </Button>
-                              <Button variant="outline" size="icon" className="text-destructive">
-                                <Trash className="h-4 w-4" />
-                                <span className="sr-only">Delete</span>
+                              <Button variant="outline" size="icon" asChild>
+                                <Link href={`/parent/results/${result.id}?download=1`} target="_blank">
+                                  <Download className="h-4 w-4" />
+                                  <span className="sr-only">Download</span>
+                                </Link>
                               </Button>
                             </div>
                           </TableCell>
@@ -417,9 +505,27 @@ export default function ResultsPage() {
               </div>
             </CardContent>
           </Card>
+          <Dialog open={isDeleteResultOpen} onOpenChange={setIsDeleteResultOpen}>
+            <DialogContent className="sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Delete result</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete the result for{" "}
+                  <span className="font-semibold">{resultToDelete?.studentName}</span>? This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={handleCancelDelete}>
+                  Cancel
+                </Button>
+                <Button type="button" variant="destructive" onClick={handleConfirmDelete}>
+                  Delete
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </main>
       </div>
     </div>
   )
 }
-
