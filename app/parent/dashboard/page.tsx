@@ -18,8 +18,8 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-// Sample student data
-const studentData = {
+// Sample pupil data
+const pupilData = {
   name: "Agboola Jasmine",
   id: "BH-N2-001",
   class: "Nursery 2",
@@ -96,11 +96,11 @@ export default function ParentDashboard() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
 
   // Calculate average score
-  const averageScore = studentData.results.reduce((acc, result) => acc + result.total, 0) / studentData.results.length
+  const averageScore = pupilData.results.reduce((acc, result) => acc + result.total, 0) / pupilData.results.length
 
   // Count grades
-  const gradeCount = studentData.results.reduce(
-    (acc, result) => {
+  const gradeCount = pupilData.results.reduce(
+    (acc: Record<string, number>, result: any) => {
       acc[result.grade] = (acc[result.grade] || 0) + 1
       return acc
     },
@@ -230,19 +230,19 @@ export default function ParentDashboard() {
         </aside>
         <main className="flex flex-col gap-6 p-4 md:gap-8 md:p-8">
           <div className="flex flex-col gap-2">
-            <h1 className="text-2xl font-bold tracking-tight">Student Dashboard</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Pupil Dashboard</h1>
             <p className="text-muted-foreground">Welcome to the parent portal. View your child's academic progress.</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Student Name</CardTitle>
+                <CardTitle className="text-sm font-medium">Pupil Name</CardTitle>
                 <User className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-xl font-bold">{studentData.name}</div>
-                <p className="text-xs text-muted-foreground">ID: {studentData.id}</p>
+                <div className="text-xl font-bold">{pupilData.name}</div>
+                <p className="text-xs text-muted-foreground">ID: {pupilData.id}</p>
               </CardContent>
             </Card>
             <Card>
@@ -251,8 +251,8 @@ export default function ParentDashboard() {
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-xl font-bold">{studentData.class}</div>
-                <p className="text-xs text-muted-foreground">{studentData.term}</p>
+                <div className="text-xl font-bold">{pupilData.class}</div>
+                <p className="text-xs text-muted-foreground">{pupilData.term}</p>
               </CardContent>
             </Card>
             <Card>
@@ -282,7 +282,7 @@ export default function ParentDashboard() {
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-xl font-bold">{studentData.results.length}</div>
+                <div className="text-xl font-bold">{pupilData.results.length}</div>
                 <p className="text-xs text-muted-foreground">
                   {gradeCount.A || 0} A's, {gradeCount.B || 0} B's, {gradeCount.C || 0} C's
                 </p>
@@ -301,7 +301,7 @@ export default function ParentDashboard() {
                   <div>
                     <CardTitle>Term Results</CardTitle>
                     <CardDescription>
-                      {studentData.class} - {studentData.term}
+                      {pupilData.class} - {pupilData.term}
                     </CardDescription>
                   </div>
                   <Button variant="outline" size="sm">
@@ -319,7 +319,7 @@ export default function ParentDashboard() {
                       <div className="col-span-2 text-center">Grade</div>
                     </div>
                     <div className="divide-y">
-                      {studentData.results.map((result) => (
+                      {pupilData.results.map((result) => (
                         <div key={result.subject} className="grid grid-cols-12 gap-2 p-4 items-center">
                           <div className="col-span-4">{result.subject}</div>
                           <div className="col-span-2 text-center">{result.midterm}</div>
@@ -377,9 +377,9 @@ export default function ParentDashboard() {
                   <CardDescription>View results from previous academic terms</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {studentData.previousTerms.length > 0 ? (
+                  {pupilData.previousTerms.length > 0 ? (
                     <div className="space-y-4">
-                      {studentData.previousTerms.map((term, index) => (
+                      {pupilData.previousTerms.map((term: any, index: number) => (
                         <div key={index} className="flex items-center justify-between p-4 border rounded-md">
                           <div>
                             <h4 className="font-medium">

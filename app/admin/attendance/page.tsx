@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Calendar, ChevronDown, Edit, Filter, Home, Trash, User } from "lucide-react"
+import { BookOpen, Calendar, ChevronDown, Edit, Filter, Home, Trash, User, Users } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,8 +20,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { classesData } from "@/app/admin/classes/page"
-import { studentsData } from "@/app/admin/students/page"
+import { classesData, pupilsData } from "@/lib/data"
 
 type CurrentUser = {
   role: string
@@ -36,9 +35,9 @@ type StaffAttendanceRecord = {
   createdAt: string
 }
 
-type StudentAttendanceRecord = {
+type PupilAttendanceRecord = {
   id: string
-  studentId: string
+  pupilId: string
   classId: string
   staffEmail: string
   date: string
@@ -61,19 +60,19 @@ type DailyReport = {
 }
 
 const STAFF_ATTENDANCE_KEY = "staffAttendance"
-const STUDENT_ATTENDANCE_KEY = "studentAttendance"
+const PUPIL_ATTENDANCE_KEY = "pupilAttendance"
 const DAILY_REPORTS_KEY = "dailyReports"
 
 export default function AdminAttendancePage() {
   const router = useRouter()
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
   const [staffAttendance, setStaffAttendance] = useState<StaffAttendanceRecord[]>([])
-  const [studentAttendance, setStudentAttendance] = useState<StudentAttendanceRecord[]>([])
+  const [pupilAttendance, setPupilAttendance] = useState<PupilAttendanceRecord[]>([])
   const [filterDate, setFilterDate] = useState("")
   const [filterClassId, setFilterClassId] = useState<string>("all")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [filterStaffEmail, setFilterStaffEmail] = useState("")
-  const [editingRecords, setEditingRecords] = useState<Record<string, StudentAttendanceRecord["status"]>>({})
+  const [editingRecords, setEditingRecords] = useState<Record<string, PupilAttendanceRecord["status"]>>({})
   const [dailyReports, setDailyReports] = useState<DailyReport[]>([])
 
   useEffect(() => {
@@ -98,7 +97,7 @@ export default function AdminAttendancePage() {
   useEffect(() => {
     if (typeof window === "undefined") return
     const storedStaff = window.localStorage.getItem(STAFF_ATTENDANCE_KEY)
-    const storedStudent = window.localStorage.getItem(STUDENT_ATTENDANCE_KEY)
+    const storedPupil = window.localStorage.getItem(PUPIL_ATTENDANCE_KEY)
     const storedReports = window.localStorage.getItem(DAILY_REPORTS_KEY)
     if (storedStaff) {
       try {
@@ -108,12 +107,12 @@ export default function AdminAttendancePage() {
         setStaffAttendance([])
       }
     }
-    if (storedStudent) {
+    if (storedPupil) {
       try {
-        const parsed = JSON.parse(storedStudent) as StudentAttendanceRecord[]
-        setStudentAttendance(parsed)
+        const parsed = JSON.parse(storedPupil) as PupilAttendanceRecord[]
+        setPupilAttendance(parsed)
       } catch {
-        setStudentAttendance([])
+        setPupilAttendance([])
       }
     }
     if (storedReports) {
@@ -126,25 +125,29 @@ export default function AdminAttendancePage() {
     }
   }, [])
 
-  const filteredStudentAttendance = useMemo(() => {
-    return studentAttendance.filter((record) => {
+  const filteredPupilAttendance = useMemo(() => {
+    return pupilAttendance.filter((record) => {
       if (filterDate && record.date !== filterDate) return false
       if (filterClassId !== "all" && record.classId !== filterClassId) return false
       if (filterStatus !== "all" && record.status !== filterStatus) return false
-      if (filterStaffEmail && !record.staffEmail.toLowerCase().includes(filterStaffEmail.toLowerCase())) return false
+      const staffEmail = (record.staffEmail || "").toLowerCase()
+      const staffFilter = (filterStaffEmail || "").toLowerCase()
+      if (filterStaffEmail && !staffEmail.includes(staffFilter)) return false
       return true
     })
-  }, [studentAttendance, filterDate, filterClassId, filterStatus, filterStaffEmail])
+  }, [pupilAttendance, filterDate, filterClassId, filterStatus, filterStaffEmail])
 
   const filteredStaffAttendance = useMemo(() => {
     return staffAttendance.filter((record) => {
       if (filterDate && record.date !== filterDate) return false
-      if (filterStaffEmail && !record.staffEmail.toLowerCase().includes(filterStaffEmail.toLowerCase())) return false
+      const staffEmail = (record.staffEmail || "").toLowerCase()
+      const staffFilter = (filterStaffEmail || "").toLowerCase()
+      if (filterStaffEmail && !staffEmail.includes(staffFilter)) return false
       return true
     })
   }, [staffAttendance, filterDate, filterStaffEmail])
 
-  const handleStudentStatusChange = (id: string, status: StudentAttendanceRecord["status"]) => {
+  const handlePupilStatusChange = (id: string, status: PupilAttendanceRecord["status"]) => {
     setEditingRecords((prev) => ({
       ...prev,
       [id]: status,
@@ -153,7 +156,7 @@ export default function AdminAttendancePage() {
 
   const handleSaveEdits = () => {
     if (Object.keys(editingRecords).length === 0) return
-    const updated = studentAttendance.map((record) => {
+    const updated = pupilAttendance.map((record) => {
       const newStatus = editingRecords[record.id]
       if (!newStatus) return record
       return {
@@ -161,18 +164,18 @@ export default function AdminAttendancePage() {
         status: newStatus,
       }
     })
-    setStudentAttendance(updated)
+    setPupilAttendance(updated)
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(STUDENT_ATTENDANCE_KEY, JSON.stringify(updated))
+      window.localStorage.setItem(PUPIL_ATTENDANCE_KEY, JSON.stringify(updated))
     }
     setEditingRecords({})
   }
 
-  const handleDeleteStudentRecord = (id: string) => {
-    const updated = studentAttendance.filter((record) => record.id !== id)
-    setStudentAttendance(updated)
+  const handleDeletePupilRecord = (id: string) => {
+    const updated = pupilAttendance.filter((record) => record.id !== id)
+    setPupilAttendance(updated)
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(STUDENT_ATTENDANCE_KEY, JSON.stringify(updated))
+      window.localStorage.setItem(PUPIL_ATTENDANCE_KEY, JSON.stringify(updated))
     }
   }
 
@@ -193,23 +196,23 @@ export default function AdminAttendancePage() {
 
   const today = new Date().toISOString().slice(0, 10)
 
-  const studentSummaries = useMemo(() => {
-    const byStudent = new Map<
+  const pupilSummaries = useMemo(() => {
+    const byPupil = new Map<
       string,
       {
-        dates: Map<string, StudentAttendanceRecord["status"]>
+        dates: Map<string, PupilAttendanceRecord["status"]>
       }
     >()
-    studentAttendance.forEach((record) => {
-      if (!byStudent.has(record.studentId)) {
-        byStudent.set(record.studentId, { dates: new Map() })
+    pupilAttendance.forEach((record) => {
+      if (!byPupil.has(record.pupilId)) {
+        byPupil.set(record.pupilId, { dates: new Map() })
       }
-      const entry = byStudent.get(record.studentId)
+      const entry = byPupil.get(record.pupilId)
       if (!entry) return
       entry.dates.set(record.date, record.status)
     })
     const summaries: {
-      studentId: string
+      pupilId: string
       name: string
       classId: string
       className: string
@@ -218,9 +221,9 @@ export default function AdminAttendancePage() {
       absentDays: number
       attendancePercent: number
     }[] = []
-    byStudent.forEach((value, studentId) => {
-      const student = studentsData.find((s) => s.id === studentId)
-      const className = student?.class || ""
+    byPupil.forEach((value, pupilId) => {
+      const pupil = pupilsData.find((s) => s.id === pupilId)
+      const className = pupil?.class || ""
       const cls = classesData.find((c) => c.name === className)
       const dates = Array.from(value.dates.entries())
       const totalDays = dates.length
@@ -236,8 +239,8 @@ export default function AdminAttendancePage() {
       const attendancePercent =
         totalDays > 0 ? Math.round(((presentDays / totalDays) * 100 + Number.EPSILON) * 10) / 10 : 0
       summaries.push({
-        studentId,
-        name: student?.name || studentId,
+        pupilId,
+        name: pupil?.name || pupilId,
         classId: cls?.id || "",
         className: cls?.name || className || "",
         totalDays,
@@ -247,51 +250,51 @@ export default function AdminAttendancePage() {
       })
     })
     return summaries
-  }, [studentAttendance])
+  }, [pupilAttendance])
 
   const classAttendance = useMemo(() => {
     const map = new Map<
       string,
       {
         className: string
-        totalStudents: number
+        totalPupils: number
         sumPercent: number
       }
     >()
-    studentSummaries.forEach((summary) => {
+    pupilSummaries.forEach((summary) => {
       if (!summary.classId) return
       const existing = map.get(summary.classId) ?? {
         className: summary.className,
-        totalStudents: 0,
+        totalPupils: 0,
         sumPercent: 0,
       }
       map.set(summary.classId, {
         className: existing.className,
-        totalStudents: existing.totalStudents + 1,
+        totalPupils: existing.totalPupils + 1,
         sumPercent: existing.sumPercent + summary.attendancePercent,
       })
     })
     const rows = Array.from(map.entries()).map(([classId, value]) => ({
       classId,
       className: value.className,
-      totalStudents: value.totalStudents,
+      totalPupils: value.totalPupils,
       attendancePercent:
-        value.totalStudents > 0
-          ? Math.round(((value.sumPercent / value.totalStudents) + Number.EPSILON) * 10) / 10
+        value.totalPupils > 0
+          ? Math.round(((value.sumPercent / value.totalPupils) + Number.EPSILON) * 10) / 10
           : 0,
     }))
     rows.sort((a, b) => (a.attendancePercent < b.attendancePercent ? 1 : -1))
     return rows
-  }, [studentSummaries])
+  }, [pupilSummaries])
 
-  const atRiskStudents = useMemo(
+  const atRiskPupils = useMemo(
     () =>
-      studentSummaries
+      pupilSummaries
         .filter((summary) => summary.totalDays > 0 && summary.attendancePercent < 75)
         .slice()
         .sort((a, b) => a.attendancePercent - b.attendancePercent)
         .slice(0, 10),
-    [studentSummaries],
+    [pupilSummaries],
   )
 
   const recentReports = useMemo(
@@ -340,11 +343,11 @@ export default function AdminAttendancePage() {
         <aside className="hidden border-r bg-muted/40 md:block">
           <nav className="grid gap-2 p-4 text-sm">
             <Link
-              href="/admin/dashboard"
+              href="/admin/pupils"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
             >
-              <Home className="h-4 w-4" />
-              Dashboard
+              <Users className="h-4 w-4" />
+              Pupils
             </Link>
             <Link
               href="/admin/results"
@@ -368,27 +371,11 @@ export default function AdminAttendancePage() {
               Results
             </Link>
             <Link
-              href="/admin/students"
+              href="/admin/pupils"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
-              Students
+              <Users className="h-4 w-4" />
+              Pupils
             </Link>
             <Link
               href="/admin/classes"
@@ -420,6 +407,13 @@ export default function AdminAttendancePage() {
             >
               <Calendar className="h-4 w-4" />
               Attendance
+            </Link>
+            <Link
+              href="/admin/daily-reports"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+            >
+              <BookOpen className="h-4 w-4" />
+              Daily Reports
             </Link>
             <Link
               href="/admin/settings"
@@ -454,7 +448,7 @@ export default function AdminAttendancePage() {
           <div className="flex flex-col gap-2">
             <h1 className="text-2xl font-bold tracking-tight">Attendance Management</h1>
             <p className="text-muted-foreground">
-              View and manage staff and student attendance across all classes. Today is {today}.
+              View and manage staff and pupil attendance across all classes. Today is {today}.
             </p>
           </div>
           <Card>
@@ -522,8 +516,8 @@ export default function AdminAttendancePage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                 <div>
-                  <CardTitle>Student Attendance</CardTitle>
-                  <CardDescription>View and edit student attendance across all classes.</CardDescription>
+                  <CardTitle>Pupil Attendance</CardTitle>
+                  <CardDescription>View and edit pupil attendance across all classes.</CardDescription>
                 </div>
                 <Button variant="outline" size="sm" onClick={handleSaveEdits} disabled={Object.keys(editingRecords).length === 0}>
                   <Edit className="mr-2 h-4 w-4" />
@@ -531,9 +525,9 @@ export default function AdminAttendancePage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                {filteredStudentAttendance.length === 0 ? (
+                {filteredPupilAttendance.length === 0 ? (
                   <div className="text-sm text-muted-foreground">
-                    No student attendance records match the selected filters.
+                    No pupil attendance records match the selected filters.
                   </div>
                 ) : (
                   <div className="max-h-[420px] overflow-auto rounded-md border">
@@ -542,7 +536,7 @@ export default function AdminAttendancePage() {
                         <TableRow>
                           <TableHead>Date</TableHead>
                           <TableHead>Time</TableHead>
-                          <TableHead>Student</TableHead>
+                          <TableHead>Pupil</TableHead>
                           <TableHead>Class</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Staff</TableHead>
@@ -550,21 +544,21 @@ export default function AdminAttendancePage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredStudentAttendance.map((record) => {
-                          const student = studentsData.find((s) => s.id === record.studentId)
+                        {filteredPupilAttendance.map((record) => {
+                          const pupil = pupilsData.find((s: any) => s.id === record.pupilId)
                           const cls = classesData.find((c) => c.id === record.classId)
                           const currentStatus = editingRecords[record.id] || record.status
                           return (
                             <TableRow key={record.id}>
                               <TableCell>{record.date}</TableCell>
                               <TableCell>{record.time}</TableCell>
-                              <TableCell>{student?.name || record.studentId}</TableCell>
+                              <TableCell>{pupil?.name || record.pupilId}</TableCell>
                               <TableCell>{cls?.name || record.classId}</TableCell>
                               <TableCell>
                                 <Select
                                   value={currentStatus}
-                                  onValueChange={(value: StudentAttendanceRecord["status"]) =>
-                                    handleStudentStatusChange(record.id, value)
+                                  onValueChange={(value: PupilAttendanceRecord["status"]) =>
+                                    handlePupilStatusChange(record.id, value)
                                   }
                                 >
                                   <SelectTrigger className="w-[120px]">
@@ -584,7 +578,7 @@ export default function AdminAttendancePage() {
                                   variant="ghost"
                                   size="icon"
                                   className="text-destructive"
-                                  onClick={() => handleDeleteStudentRecord(record.id)}
+                                  onClick={() => handleDeletePupilRecord(record.id)}
                                 >
                                   <Trash className="h-4 w-4" />
                                 </Button>
@@ -660,7 +654,7 @@ export default function AdminAttendancePage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Class</TableHead>
-                          <TableHead>Students</TableHead>
+                          <TableHead>Pupils</TableHead>
                           <TableHead>Attendance %</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -668,7 +662,7 @@ export default function AdminAttendancePage() {
                         {classAttendance.map((row) => (
                           <TableRow key={row.classId}>
                             <TableCell>{row.className}</TableCell>
-                            <TableCell>{row.totalStudents}</TableCell>
+                            <TableCell>{row.totalPupils}</TableCell>
                             <TableCell>{row.attendancePercent}%</TableCell>
                           </TableRow>
                         ))}
@@ -680,30 +674,30 @@ export default function AdminAttendancePage() {
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>At-Risk Students</CardTitle>
+                <CardTitle>At-Risk Pupils</CardTitle>
                 <CardDescription>
-                  Students with attendance below 75% based on recorded days.
+                  Pupils with attendance below 75% based on recorded days.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {atRiskStudents.length === 0 ? (
+                {atRiskPupils.length === 0 ? (
                   <div className="text-sm text-muted-foreground">
-                    No students are currently flagged as at risk.
+                    No pupils are currently flagged as at risk.
                   </div>
                 ) : (
                   <div className="max-h-[320px] overflow-auto rounded-md border">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Student</TableHead>
+                          <TableHead>Pupil</TableHead>
                           <TableHead>Class</TableHead>
                           <TableHead>Attendance %</TableHead>
                           <TableHead>Days</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {atRiskStudents.map((summary) => (
-                          <TableRow key={summary.studentId}>
+                        {atRiskPupils.map((summary: any) => (
+                          <TableRow key={summary.pupilId}>
                             <TableCell>{summary.name}</TableCell>
                             <TableCell>{summary.className}</TableCell>
                             <TableCell>{summary.attendancePercent}%</TableCell>

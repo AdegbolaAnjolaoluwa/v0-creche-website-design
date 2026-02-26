@@ -23,8 +23,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 // Sample result data
 const resultDetails = {
   id: "R001",
-  studentId: "BH-N2-001",
-  studentName: "Agboola Jasmine",
+  pupilId: "BH-N2-001",
+  pupilName: "Agboola Jasmine",
   class: "Nursery 2",
   term: "Term 2",
   academicYear: "2023-2024",
@@ -63,13 +63,15 @@ const resultDetails = {
 export default function ResultDetailPage() {
   const params = useParams()
   const searchParams = useSearchParams()
-  const resultId = params.id
+  const resultId = params.id as string
 
   // In a real application, you would fetch the result data based on the ID
   // For this example, we're using the sample data
 
   const handlePrint = () => {
-    window.print()
+    if (typeof window !== "undefined") {
+      window.print()
+    }
   }
 
   useEffect(() => {
@@ -220,17 +222,17 @@ export default function ResultDetailPage() {
 
             <Card className="mb-6">
               <CardHeader>
-                <CardTitle>Student Information</CardTitle>
+                <CardTitle>Pupil Information</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Student Name</p>
-                    <p className="font-medium">{resultDetails.studentName}</p>
+                    <p className="text-sm text-muted-foreground">Pupil Name</p>
+                    <p className="font-medium">{resultDetails.pupilName}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Student ID</p>
-                    <p className="font-medium">{resultDetails.studentId}</p>
+                    <p className="text-sm text-muted-foreground">Pupil ID</p>
+                    <p className="font-medium">{resultDetails.pupilId}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Class</p>

@@ -30,77 +30,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
-export const classesData = [
-  {
-    id: "class-001",
-    name: "Creche",
-    description:
-      "For children aged 3 months to 2 years. Focused on nurturing care, sensory play, and early development milestones.",
-    ageRange: "3 months - 2 years",
-    teacherName: "Alexander Anwangbasi Joy",
-    studentCount: 18,
-    subjects: ["Motor Skills", "Social Interaction", "Basic Recognition", "Sensory Development"],
-  },
-  {
-    id: "class-002",
-    name: "Nursery 1",
-    description:
-      "For children aged 2-3 years. Introducing structured learning through play, basic concepts, and social skills.",
-    ageRange: "2-3 years",
-    teacherName: "Adegoke Oluwatosin Elizabeth",
-    studentCount: 28,
-    subjects: ["Alphabets", "Numbers", "Coloring", "Rhymes", "Basic Writing", "Social Skills"],
-  },
-  {
-    id: "class-003",
-    name: "Nursery 2",
-    description:
-      "For children aged 3-4 years. Building pre-academic foundations, language development, and creative expression.",
-    ageRange: "3-4 years",
-    teacherName: "Teniola Fetinoluwa Christiana",
-    studentCount: 32,
-    subjects: [
-      "Reading",
-      "Writing",
-      "Arithmetic",
-      "Arts & Crafts",
-      "Science",
-      "Social Studies",
-      "Physical Education",
-      "Music",
-    ],
-  },
-  {
-    id: "class-004",
-    name: "Playgroup",
-    description:
-      "An introductory program that helps children adjust to school routines through guided play and social interaction.",
-    ageRange: "18 months - 3 years",
-    teacherName: "Fagade Samuel",
-    studentCount: 16,
-    subjects: ["Free Play", "Circle Time", "Music & Movement", "Outdoor Play"],
-  },
-  {
-    id: "class-005",
-    name: "Preschool 1",
-    description:
-      "For children progressing from playgroup. Focused on language development, number sense, and social confidence.",
-    ageRange: "3-4 years",
-    teacherName: "Akinnade Oluwafemi",
-    studentCount: 20,
-    subjects: ["Pre-reading", "Pre-writing", "Numbers", "Practical Life", "Rhymes", "Story Time"],
-  },
-  {
-    id: "class-006",
-    name: "Preschool 2",
-    description:
-      "For children preparing to enter Nursery 1. Reinforces pre-academic skills, independence, and classroom routines.",
-    ageRange: "4-5 years",
-    teacherName: "Damisa Yetunde Halimat",
-    studentCount: 22,
-    subjects: ["Reading Readiness", "Writing Readiness", "Mathematics Concepts", "Science Exploration", "Art & Music"],
-  },
-]
+import { classesData } from "@/lib/data"
 
 export default function ClassesPage() {
   const [isAddClassOpen, setIsAddClassOpen] = useState(false)
@@ -110,6 +40,31 @@ export default function ClassesPage() {
     ageRange: "",
     teacherName: "",
     subjects: "",
+  })
+
+  const [staffAssignments, setStaffAssignments] = useState<Record<string, { name: string, email: string }>>({})
+
+  useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem("staffClassAssignments")
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored)
+          // Migration: handle string format if exists
+          const migrated: Record<string, { name: string, email: string }> = {}
+          Object.keys(parsed).forEach(key => {
+            if (typeof parsed[key] === 'string') {
+              migrated[key] = { name: "", email: parsed[key] }
+            } else {
+              migrated[key] = parsed[key]
+            }
+          })
+          setStaffAssignments(migrated)
+        } catch {
+          setStaffAssignments({})
+        }
+      }
+    }
   })
 
   // Handle form input changes
@@ -215,7 +170,21 @@ export default function ClassesPage() {
               Results
             </Link>
             <Link
-              href="/admin/students"
+              href="/admin/pupils"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+            >
+              <Users className="h-4 w-4" />
+              Pupils
+            </Link>
+            <Link
+              href="/admin/classes"
+              className="flex items-center gap-3 rounded-lg bg-primary px-3 py-2 text-primary-foreground transition-all hover:text-primary-foreground"
+            >
+              <BookOpen className="h-4 w-4" />
+              Classes
+            </Link>
+            <Link
+              href="/admin/attendance"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
             >
               <svg
@@ -230,19 +199,19 @@ export default function ClassesPage() {
                 strokeLinejoin="round"
                 className="h-4 w-4"
               >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
+                <line x1="16" x2="16" y1="2" y2="6"></line>
+                <line x1="8" x2="8" y1="2" y2="6"></line>
+                <line x1="3" x2="21" y1="10" y2="10"></line>
               </svg>
-              Students
+              Attendance
             </Link>
             <Link
-              href="/admin/classes"
-              className="flex items-center gap-3 rounded-lg bg-primary px-3 py-2 text-primary-foreground transition-all hover:text-primary-foreground"
+              href="/admin/daily-reports"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
             >
               <BookOpen className="h-4 w-4" />
-              Classes
+              Daily Reports
             </Link>
             <Link
               href="/admin/settings"
@@ -405,11 +374,20 @@ export default function ClassesPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm">{classItem.teacherName}</p>
+                      <div className="text-sm">
+                        {staffAssignments[classItem.id] ? (
+                          <div className="flex flex-col">
+                            <span className="font-medium text-slate-900">{staffAssignments[classItem.id].name || "Unnamed Teacher"}</span>
+                            <span className="text-xs text-muted-foreground">{staffAssignments[classItem.id].email}</span>
+                          </div>
+                        ) : (
+                          <p>{classItem.teacherName}</p>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm">{classItem.studentCount} students enrolled</p>
+                      <p className="text-sm">{classItem.pupilCount} pupils enrolled</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium mb-2">Subjects</p>
@@ -429,7 +407,7 @@ export default function ClassesPage() {
                         <Link href={`/admin/classes/${classItem.id}`}>View Details</Link>
                       </Button>
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/admin/students?class=${classItem.name}`}>View Students</Link>
+                        <Link href={`/admin/pupils?class=${classItem.name}`}>View Pupils</Link>
                       </Button>
                     </div>
                   </div>

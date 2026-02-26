@@ -79,7 +79,7 @@ func (s *Server) registerRoutes() {
 	adminAuth := middleware.RequireAdmin(s.jwtSecret)
 
 	api.Post("/attendance/staff/signin", staffAuth, handlers.NotImplemented("STAFF_ATTENDANCE_SIGNIN"))
-	api.Post("/attendance/students", staffAuth, handlers.NotImplemented("STUDENT_ATTENDANCE"))
+	api.Post("/attendance/pupils", staffAuth, handlers.NotImplemented("PUPIL_ATTENDANCE"))
 	api.Post("/reports", staffAuth, handlers.NotImplemented("DAILY_REPORT_CREATE"))
 	api.Post("/results/upload", staffAuth, handlers.NotImplemented("RESULT_UPLOAD"))
 	api.Get("/results/my-class", staffAuth, handlers.NotImplemented("RESULTS_MY_CLASS"))
@@ -102,4 +102,3 @@ func requestIDMiddleware() fiber.Handler {
 		return c.Next()
 	}
 }
-

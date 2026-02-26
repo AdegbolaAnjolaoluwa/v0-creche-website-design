@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { BookOpen, ChevronDown, Home, LogOut, Menu, User, Users } from "lucide-react"
+import { ArrowLeft, BookOpen, CheckCircle2, ChevronDown, Clock, Home, LogOut, Menu, User, Users } from "lucide-react"
 
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -18,7 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { classesData } from "@/app/admin/classes/page"
+import { classesData } from "@/lib/data"
 
 type StaffAttendanceRecord = {
   id: string
@@ -40,11 +41,13 @@ type DailyReport = {
   classId: string
   date: string
   topicsTaught: string
-  activitiesDone: string
-  behaviourNotes: string
+  incidentReport: string
   homework: string
   generalComment: string
   createdAt: string
+  approvalStatus?: "Pending" | "Approved"
+  approvedBy?: string
+  approvedAt?: string
 }
 
 const DAILY_REPORTS_KEY = "dailyReports"
@@ -69,8 +72,7 @@ export default function DailyReportPage() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
   const [dailyReports, setDailyReports] = useState<DailyReport[]>([])
   const [reportTopicsTaught, setReportTopicsTaught] = useState("")
-  const [reportActivitiesDone, setReportActivitiesDone] = useState("")
-  const [reportBehaviourNotes, setReportBehaviourNotes] = useState("")
+  const [reportIncidentReport, setReportIncidentReport] = useState("")
   const [reportHomework, setReportHomework] = useState("")
   const [reportGeneralComment, setReportGeneralComment] = useState("")
   const [isSavingReport, setIsSavingReport] = useState(false)
@@ -144,15 +146,13 @@ export default function DailyReportPage() {
   useEffect(() => {
     if (!todaysReport) {
       setReportTopicsTaught("")
-      setReportActivitiesDone("")
-      setReportBehaviourNotes("")
+      setReportIncidentReport("")
       setReportHomework("")
       setReportGeneralComment("")
       return
     }
     setReportTopicsTaught(todaysReport.topicsTaught)
-    setReportActivitiesDone(todaysReport.activitiesDone)
-    setReportBehaviourNotes(todaysReport.behaviourNotes)
+    setReportIncidentReport(todaysReport.incidentReport)
     setReportHomework(todaysReport.homework)
     setReportGeneralComment(todaysReport.generalComment)
   }, [todaysReport])
@@ -185,22 +185,26 @@ export default function DailyReportPage() {
       classId: currentUser.classId || "",
       date,
       topicsTaught: reportTopicsTaught,
-      activitiesDone: reportActivitiesDone,
-      behaviourNotes: reportBehaviourNotes,
+      incidentReport: reportIncidentReport,
       homework: reportHomework,
       generalComment: reportGeneralComment,
       createdAt,
+      approvalStatus: "Pending",
     }
     let updated: DailyReport[]
     if (existingIndex >= 0) {
       updated = dailyReports.slice()
+      // Keep existing approval if it was already approved
+      const existing = updated[existingIndex]
       updated[existingIndex] = {
-        ...updated[existingIndex],
+        ...existing,
         topicsTaught: baseReport.topicsTaught,
-        activitiesDone: baseReport.activitiesDone,
-        behaviourNotes: baseReport.behaviourNotes,
+        incidentReport: baseReport.incidentReport,
         homework: baseReport.homework,
         generalComment: baseReport.generalComment,
+        // Reset to pending if edited, unless already approved?
+        // Let's reset to pending if edited
+        approvalStatus: "Pending",
       }
     } else {
       updated = [...dailyReports, baseReport]
@@ -316,7 +320,15 @@ export default function DailyReportPage() {
       </header>
       <main className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-8">
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">Daily Report</h1>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" asChild>
+              <Link href="/staff/dashboard">
+                <ArrowLeft className="h-4 w-4" />
+                <span className="sr-only">Back</span>
+              </Link>
+            </Button>
+            <h1 className="text-2xl font-bold tracking-tight">Daily Report</h1>
+          </div>
           <p className="text-muted-foreground">
             Submit and review your daily report for your class. Today is {today}.
           </p>
@@ -361,10 +373,26 @@ export default function DailyReportPage() {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>Today&apos;s Report</CardTitle>
-            <CardDescription>Submit or update your report for today.</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Today&apos;s Report</CardTitle>
+                <CardDescription>Submit or update your report for today.</CardDescription>
+              </div>
+              {todaysReport?.approvalStatus === "Approved" && (
+                <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100 border-none gap-1 py-1 px-3">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Signed Off by Admin
+                </Badge>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
+            {todaysReport?.approvalStatus === "Approved" && (
+              <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-800 border border-green-200 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4" />
+                This report has been approved and signed off. Any further changes will reset the status to pending.
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="topics-taught">
                 Topics taught
@@ -377,25 +405,14 @@ export default function DailyReportPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="activities-done">
-                Class activities
+              <label className="block text-sm font-medium mb-1" htmlFor="incident-report">
+                Incident report
               </label>
               <textarea
-                id="activities-done"
+                id="incident-report"
                 className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                value={reportActivitiesDone}
-                onChange={(e) => setReportActivitiesDone(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="behaviour-notes">
-                Behaviour notes
-              </label>
-              <textarea
-                id="behaviour-notes"
-                className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                value={reportBehaviourNotes}
-                onChange={(e) => setReportBehaviourNotes(e.target.value)}
+                value={reportIncidentReport}
+                onChange={(e) => setReportIncidentReport(e.target.value)}
               />
             </div>
             <div>
@@ -442,16 +459,24 @@ export default function DailyReportPage() {
                     <TableRow>
                       <TableHead>Date</TableHead>
                       <TableHead>Topics taught</TableHead>
-                      <TableHead className="hidden md:table-cell">Activities</TableHead>
+                      <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {myReports.map((report) => (
                       <TableRow key={report.id}>
-                        <TableCell>{report.date}</TableCell>
+                        <TableCell className="font-medium">{report.date}</TableCell>
                         <TableCell className="max-w-[260px] truncate">{report.topicsTaught}</TableCell>
-                        <TableCell className="hidden md:table-cell max-w-[260px] truncate">
-                          {report.activitiesDone}
+                        <TableCell>
+                          {report.approvalStatus === "Approved" ? (
+                            <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100 border-none h-6 px-2">
+                              Approved
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="bg-slate-100 text-slate-600 hover:bg-slate-100 border-none h-6 px-2">
+                              Pending
+                            </Badge>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

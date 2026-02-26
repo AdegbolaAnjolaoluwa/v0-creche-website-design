@@ -33,13 +33,11 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
-import { studentsData } from "../students/page"
-import { classesData } from "../classes/page"
-import { resultsData, type ResultRecord } from "../results/page"
+import { pupilsData, classesData, resultsData, type ResultRecord } from "@/lib/data"
 
-type StudentAttendanceRecord = {
+type PupilAttendanceRecord = {
   id: string
-  studentId: string
+  pupilId: string
   classId: string
   staffEmail: string
   date: string
@@ -54,16 +52,31 @@ type DailyReport = {
   classId: string
   date: string
   topicsTaught: string
-  activitiesDone: string
-  behaviourNotes: string
+  incidentReport: string
   homework: string
   generalComment: string
   createdAt: string
+  approvalStatus?: "Pending" | "Approved"
+  approvedBy?: string
+  approvedAt?: string
 }
 
 const RESULTS_STORAGE_KEY = "adminResults"
-const STUDENT_ATTENDANCE_KEY = "studentAttendance"
+const PUPIL_ATTENDANCE_KEY = "pupilAttendance"
 const DAILY_REPORTS_KEY = "dailyReports"
+const LEAVE_REQUESTS_KEY = "staffLeaveRequests"
+
+type LeaveRequest = {
+  id: string
+  staffEmail: string
+  startDate: string
+  endDate: string
+  type: "Sick" | "Vacation" | "Emergency" | "Other"
+  reason: string
+  status: "Pending" | "Approved" | "Rejected"
+  createdAt: string
+  adminComment?: string
+}
 
 const loadResultsFromStorage = (): ResultRecord[] => {
   if (typeof window === "undefined") return resultsData
@@ -83,12 +96,12 @@ const loadResultsFromStorage = (): ResultRecord[] => {
   }
 }
 
-const loadStudentAttendanceFromStorage = (): StudentAttendanceRecord[] => {
+const loadPupilAttendanceFromStorage = (): PupilAttendanceRecord[] => {
   if (typeof window === "undefined") return []
-  const stored = window.localStorage.getItem(STUDENT_ATTENDANCE_KEY)
+  const stored = window.localStorage.getItem(PUPIL_ATTENDANCE_KEY)
   if (!stored) return []
   try {
-    const parsed = JSON.parse(stored) as StudentAttendanceRecord[]
+    const parsed = JSON.parse(stored) as PupilAttendanceRecord[]
     if (!Array.isArray(parsed)) {
       return []
     }
@@ -113,14 +126,30 @@ const loadDailyReportsFromStorage = (): DailyReport[] => {
   }
 }
 
+const loadLeaveRequestsFromStorage = (): LeaveRequest[] => {
+  if (typeof window === "undefined") return []
+  const stored = window.localStorage.getItem(LEAVE_REQUESTS_KEY)
+  if (!stored) return []
+  try {
+    const parsed = JSON.parse(stored) as LeaveRequest[]
+    if (!Array.isArray(parsed)) {
+      return []
+    }
+    return parsed
+  } catch {
+    return []
+  }
+}
+
 export default function AdminDashboard() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
 
   const [results] = useState<ResultRecord[]>(() => loadResultsFromStorage())
-  const [studentAttendance] = useState<StudentAttendanceRecord[]>(() => loadStudentAttendanceFromStorage())
+  const [pupilAttendance] = useState<PupilAttendanceRecord[]>(() => loadPupilAttendanceFromStorage())
   const [dailyReports] = useState<DailyReport[]>(() => loadDailyReportsFromStorage())
+  const [leaveRequests] = useState<LeaveRequest[]>(() => loadLeaveRequestsFromStorage())
 
-  const totalStudents = studentsData.length
+  const totalPupils = pupilsData.length
   const totalClasses = classesData.length
 
   const publishedResults = useMemo(
@@ -276,31 +305,29 @@ export default function AdminDashboard() {
   }, [results])
 
   const attendanceAnalytics = useMemo(() => {
-    if (studentAttendance.length === 0) {
+    if (pupilAttendance.length === 0) {
       return {
         overallPercent: 0,
         totalRecords: 0,
-        uniqueStudents: 0,
+        uniquePupils: 0,
         atRiskCount: 0,
       }
     }
 
-    const byStudent = new Map<string, Map<string, StudentAttendanceRecord["status"]>>()
+    const byPupil = new Map<string, Map<string, PupilAttendanceRecord["status"]>>()
 
-    studentAttendance.forEach((record) => {
-      let dates = byStudent.get(record.studentId)
-      if (!dates) {
-        dates = new Map()
-        byStudent.set(record.studentId, dates)
+    pupilAttendance.forEach((record) => {
+      if (!byPupil.has(record.pupilId)) {
+        byPupil.set(record.pupilId, new Map())
       }
-      dates.set(record.date, record.status)
+      byPupil.get(record.pupilId)!.set(record.date, record.status)
     })
 
     let totalDays = 0
     let totalPresentDays = 0
     let atRiskCount = 0
 
-    byStudent.forEach((dates) => {
+    byPupil.forEach((dates) => {
       const days = dates.size
       if (days === 0) return
       let presentDays = 0
@@ -321,11 +348,11 @@ export default function AdminDashboard() {
 
     return {
       overallPercent,
-      totalRecords: studentAttendance.length,
-      uniqueStudents: byStudent.size,
+      totalRecords: pupilAttendance.length,
+      uniquePupils: byPupil.size,
       atRiskCount,
     }
-  }, [studentAttendance])
+  }, [pupilAttendance])
 
   const reportsAnalytics = useMemo(
     () => ({
@@ -333,6 +360,13 @@ export default function AdminDashboard() {
     }),
     [dailyReports],
   )
+  
+  const leaveAnalytics = useMemo(() => {
+    return {
+      pending: leaveRequests.filter(r => r.status === "Pending").length,
+      total: leaveRequests.length
+    }
+  }, [leaveRequests])
 
   const recentResults = useMemo(
     () =>
@@ -391,12 +425,28 @@ export default function AdminDashboard() {
                   Results
                 </Link>
                 <Link
-                  href="/admin/students"
+                  href="/admin/attendance"
+                  className="flex items-center gap-2"
+                  onClick={() => setIsMobileNavOpen(false)}
+                >
+                  <Calendar className="h-5 w-5" />
+                  Attendance
+                </Link>
+                <Link
+                  href="/admin/daily-reports"
+                  className="flex items-center gap-2"
+                  onClick={() => setIsMobileNavOpen(false)}
+                >
+                  <FileText className="h-5 w-5" />
+                  Daily Reports
+                </Link>
+                <Link
+                  href="/admin/pupils"
                   className="flex items-center gap-2"
                   onClick={() => setIsMobileNavOpen(false)}
                 >
                   <Users className="h-5 w-5" />
-                  Students
+                  Pupils
                 </Link>
                 <Link
                   href="/admin/classes"
@@ -445,17 +495,22 @@ export default function AdminDashboard() {
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
+            <DropdownMenuItem asChild>
+              <Link href="/admin/settings" className="flex items-center">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <Link href="/">
-              <DropdownMenuItem>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </Link>
+            <DropdownMenuItem onClick={() => {
+              if (typeof window !== "undefined") {
+                window.localStorage.removeItem("currentUser")
+              }
+              window.location.href = "/login?type=admin"
+            }}>
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Log out</span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
@@ -484,11 +539,18 @@ export default function AdminDashboard() {
                 Attendance
               </Link>
             <Link
-              href="/admin/students"
+              href="/admin/daily-reports"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+            >
+              <BookOpen className="h-4 w-4" />
+              Daily Reports
+            </Link>
+            <Link
+              href="/admin/pupils"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
             >
               <Users className="h-4 w-4" />
-              Students
+              Pupils
             </Link>
             <Link
               href="/admin/classes"
@@ -504,6 +566,13 @@ export default function AdminDashboard() {
               <Settings className="h-4 w-4" />
               Settings
             </Link>
+            <Link
+              href="/admin/leave"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+            >
+              <Calendar className="h-4 w-4" />
+              Staff Leave
+            </Link>
           </nav>
         </aside>
         <main className="flex flex-col gap-6 p-4 md:gap-8 md:p-8">
@@ -511,7 +580,7 @@ export default function AdminDashboard() {
             <div className="grid gap-1">
               <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
               <p className="text-muted-foreground">
-                Welcome to the admin dashboard. Manage results, students, and classes.
+                Welcome to the admin dashboard. Manage results, pupils, and classes.
               </p>
             </div>
             <div className="flex-1" />
@@ -526,11 +595,11 @@ export default function AdminDashboard() {
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+                    <CardTitle className="text-sm font-medium">Total Pupils</CardTitle>
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{totalStudents}</div>
+                    <div className="text-2xl font-bold">{totalPupils}</div>
                     <p className="text-xs text-muted-foreground">Across all active classes</p>
                   </CardContent>
                 </Card>
@@ -546,6 +615,21 @@ export default function AdminDashboard() {
                 </Card>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Daily Reports</CardTitle>
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{reportsAnalytics.totalReports}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Total reports submitted by staff
+                    </p>
+                    <Button variant="link" className="px-0 h-auto text-xs" asChild>
+                      <Link href="/admin/daily-reports">View All Reports</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Results Published</CardTitle>
                     <FileText className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
@@ -553,9 +637,6 @@ export default function AdminDashboard() {
                     <div className="text-2xl font-bold">{totalPublishedResults}</div>
                     <p className="text-xs text-muted-foreground">
                       {totalDraftResults} pending review
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {reportsAnalytics.totalReports} daily reports recorded
                     </p>
                   </CardContent>
                 </Card>
@@ -568,6 +649,18 @@ export default function AdminDashboard() {
                     <div className="text-2xl font-bold">{averageScore.toFixed(1)}%</div>
                     <p className="text-xs text-muted-foreground">
                       Across published results; average attendance {attendanceAnalytics.overallPercent.toFixed(1)}%
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Leave Requests</CardTitle>
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{leaveAnalytics.pending}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Pending approval ({leaveAnalytics.total} total)
                     </p>
                   </CardContent>
                 </Card>
@@ -584,12 +677,12 @@ export default function AdminDashboard() {
                         <div key={result.id} className="space-y-2">
                           <div className="flex items-center">
                             <div className="font-medium">
-                              {result.class} - {result.term} - {result.studentName}
+                              {result.class} - {result.term} - {result.pupilName}
                             </div>
                             <div className="ml-auto text-sm text-muted-foreground">{result.date}</div>
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            ID {result.studentId}, average score {result.averageScore}% ({result.grade || "No grade"})
+                            ID {result.pupilId}, average score {result.averageScore}% ({result.grade || "No grade"})
                           </div>
                           <div className="h-2 w-full rounded-full bg-muted">
                             <div
@@ -704,10 +797,10 @@ export default function AdminDashboard() {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>Class</TableHead>
-                                <TableHead>Students</TableHead>
-                                <TableHead>Average</TableHead>
-                              </TableRow>
+                              <TableHead>Class</TableHead>
+                              <TableHead>Pupils</TableHead>
+                              <TableHead>Average</TableHead>
+                            </TableRow>
                             </TableHeader>
                             <TableBody>
                               {classAnalytics.map((item) => (
@@ -748,10 +841,10 @@ export default function AdminDashboard() {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>Term</TableHead>
-                                <TableHead>Students</TableHead>
-                                <TableHead>Average</TableHead>
-                              </TableRow>
+                              <TableHead>Term</TableHead>
+                              <TableHead>Pupils</TableHead>
+                              <TableHead>Average</TableHead>
+                            </TableRow>
                             </TableHeader>
                             <TableBody>
                               {termAnalytics.map((item) => (
@@ -817,7 +910,7 @@ export default function AdminDashboard() {
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>At-risk students</span>
+                        <span>At-risk pupils</span>
                         <span className="font-medium">{attendanceAnalytics.atRiskCount}</span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -859,7 +952,7 @@ export default function AdminDashboard() {
                           <TableHeader>
                             <TableRow>
                               <TableHead>Report ID</TableHead>
-                              <TableHead>Student</TableHead>
+                              <TableHead>Pupil</TableHead>
                               <TableHead className="hidden md:table-cell">Class</TableHead>
                               <TableHead>Term</TableHead>
                               <TableHead className="hidden md:table-cell">Average</TableHead>
@@ -873,8 +966,8 @@ export default function AdminDashboard() {
                                 <TableCell className="font-medium">{result.id}</TableCell>
                                 <TableCell>
                                   <div className="flex flex-col">
-                                    <span>{result.studentName}</span>
-                                    <span className="text-xs text-muted-foreground">{result.studentId}</span>
+                                    <span>{result.pupilName}</span>
+                                    <span className="text-xs text-muted-foreground">{result.pupilId}</span>
                                   </div>
                                 </TableCell>
                                 <TableCell className="hidden md:table-cell">{result.class}</TableCell>

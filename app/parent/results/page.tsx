@@ -42,8 +42,8 @@ const childrenData = [
 const resultsData = [
   {
     id: "R001",
-    studentId: "BH-N2-001",
-    studentName: "Agboola Jasmine",
+    pupilId: "BH-N2-001",
+    pupilName: "Agboola Jasmine",
     class: "Nursery 2",
     term: "Term 2",
     averageScore: 78.5,
@@ -53,8 +53,8 @@ const resultsData = [
   },
   {
     id: "R002",
-    studentId: "BH-N2-001",
-    studentName: "Agboola Jasmine",
+    pupilId: "BH-N2-001",
+    pupilName: "Agboola Jasmine",
     class: "Nursery 2",
     term: "Term 1",
     averageScore: 82.3,
@@ -64,8 +64,8 @@ const resultsData = [
   },
   {
     id: "R003",
-    studentId: "BH-N1-002",
-    studentName: "Adedoyin Judith",
+    pupilId: "BH-N1-002",
+    pupilName: "Adedoyin Judith",
     class: "Nursery 1",
     term: "Term 2",
     averageScore: 85.8,
@@ -75,8 +75,8 @@ const resultsData = [
   },
   {
     id: "R004",
-    studentId: "BH-N1-002",
-    studentName: "Adedoyin Judith",
+    pupilId: "BH-N1-002",
+    pupilName: "Adedoyin Judith",
     class: "Nursery 1",
     term: "Term 1",
     averageScore: 79.2,
@@ -93,12 +93,15 @@ export default function ParentResultsPage() {
 
   // Filter results based on search and filters
   const filteredResults = resultsData.filter((result) => {
+    if (!result) return false
+    
+    const term = (searchTerm || "").toLowerCase()
     const matchesSearch =
-      result.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      result.date.toLowerCase().includes(searchTerm.toLowerCase())
+      (result.term || "").toLowerCase().includes(term) ||
+      (result.date || "").toLowerCase().includes(term)
 
     const matchesTerm = selectedTerm === "all" || result.term === selectedTerm
-    const matchesChild = selectedChild === "all" || result.studentId === selectedChild
+    const matchesChild = selectedChild === "all" || result.pupilId === selectedChild
 
     return matchesSearch && matchesTerm && matchesChild
   })
@@ -272,7 +275,7 @@ export default function ParentResultsPage() {
                         {filteredResults.length > 0 ? (
                           filteredResults.map((result) => (
                             <TableRow key={result.id}>
-                              <TableCell className="font-medium">{result.studentName}</TableCell>
+                              <TableCell className="font-medium">{result.pupilName}</TableCell>
                               <TableCell>{result.class}</TableCell>
                               <TableCell>{result.term}</TableCell>
                               <TableCell className="text-center">{result.averageScore.toFixed(1)}%</TableCell>
@@ -337,7 +340,7 @@ export default function ParentResultsPage() {
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="text-sm text-muted-foreground">Student ID</p>
+                            <p className="text-sm text-muted-foreground">Pupil ID</p>
                             <p className="font-medium">{child.id}</p>
                           </div>
                           <div>

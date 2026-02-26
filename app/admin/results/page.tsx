@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronDown, Download, FileText, Filter, Plus, Search, Trash, User } from "lucide-react"
+import { BookOpen, ChevronDown, Download, FileText, Filter, Plus, Search, Trash, User, Users, Edit } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -27,113 +27,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-export type ResultRecord = {
-  id: string
-  studentId: string
-  studentName: string
-  class: string
-  term: string
-  averageScore: number
-  grade: string
-  date: string
-  status: string
-  attendancePercentage?: number
-  attendanceScore?: number
-  finalScore?: number
-}
+import { resultsData, type ResultRecord } from "@/lib/data"
 
 const RESULTS_STORAGE_KEY = "adminResults"
-
-export const resultsData: ResultRecord[] = [
-  {
-    id: "R001",
-    studentId: "BH-N2-001",
-    studentName: "Agboola Jasmine",
-    class: "Nursery 2",
-    term: "Term 2",
-    averageScore: 78.5,
-    grade: "A",
-    date: "2023-03-15",
-    status: "Published",
-  },
-  {
-    id: "R002",
-    studentId: "BH-N1-002",
-    studentName: "Adedoyin Judith",
-    class: "Nursery 1",
-    term: "Term 2",
-    averageScore: 82.3,
-    grade: "A",
-    date: "2023-03-15",
-    status: "Published",
-  },
-  {
-    id: "R003",
-    studentId: "BH-PS2-003",
-    studentName: "Kareem Jayden",
-    class: "Preschool 2",
-    term: "Term 2",
-    averageScore: 65.8,
-    grade: "B",
-    date: "2023-03-14",
-    status: "Published",
-  },
-  {
-    id: "R004",
-    studentId: "BH-N2-006",
-    studentName: "Fakude Mabel",
-    class: "Nursery 2",
-    term: "Term 2",
-    averageScore: 91.2,
-    grade: "A",
-    date: "2023-03-14",
-    status: "Published",
-  },
-  {
-    id: "R005",
-    studentId: "BH-N1-005",
-    studentName: "Ohiomah Divine",
-    class: "Nursery 1",
-    term: "Term 2",
-    averageScore: 73.9,
-    grade: "A",
-    date: "2023-03-13",
-    status: "Published",
-  },
-  {
-    id: "R006",
-    studentId: "BH-PS1-002",
-    studentName: "Adeyemo Micah",
-    class: "Preschool 1",
-    term: "Term 2",
-    averageScore: 76.8,
-    grade: "A",
-    date: "2023-03-13",
-    status: "Published",
-  },
-  {
-    id: "R007",
-    studentId: "BH-PG-005",
-    studentName: "Okonkwo Marvelous",
-    class: "Playgroup",
-    term: "Term 2",
-    averageScore: 68.5,
-    grade: "B",
-    date: "2023-03-12",
-    status: "Published",
-  },
-  {
-    id: "R008",
-    studentId: "BH-PG-002",
-    studentName: "Innocent Nathan",
-    class: "Playgroup",
-    term: "Term 2",
-    averageScore: 0,
-    grade: "",
-    date: "2023-03-15",
-    status: "Draft",
-  },
-]
 
 const loadResultsFromStorage = (): ResultRecord[] => {
   if (typeof window === "undefined") return resultsData
@@ -143,11 +39,19 @@ const loadResultsFromStorage = (): ResultRecord[] => {
     return resultsData
   }
   try {
-    const parsed = JSON.parse(stored) as ResultRecord[]
+    const parsed = JSON.parse(stored)
     if (!Array.isArray(parsed)) {
       return resultsData
     }
-    return parsed
+    // Migration: ensure old studentName/studentId keys are mapped to pupilName/pupilId
+    const migrated = parsed
+      .filter(item => item !== null && item !== undefined)
+      .map((item: any) => ({
+        ...item,
+        pupilId: item.pupilId || item.studentId || "",
+        pupilName: item.pupilName || item.studentName || "",
+      }))
+    return migrated as ResultRecord[]
   } catch {
     return resultsData
   }
@@ -169,13 +73,18 @@ export default function ResultsPage() {
   const [selectedClass, setSelectedClass] = useState("all")
   const [selectedTerm, setSelectedTerm] = useState("all")
   const [selectedStatus, setSelectedStatus] = useState("all")
-  const [isDeleteResultOpen, setIsDeleteResultOpen] = useState(false)
-  const [resultToDelete, setResultToDelete] = useState<{ id: string; studentName: string } | null>(null)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [resultToDelete, setResultToDelete] = useState<{ id: string; pupilName: string } | null>(null)
 
+  // Filter results based on search and filters
   const filteredResults = results.filter((result) => {
+    if (!result) return false
+    
+    const term = (searchTerm || "").toLowerCase()
     const matchesSearch =
-      result.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      result.studentId.toLowerCase().includes(searchTerm.toLowerCase())
+      (result.pupilName || "").toLowerCase().includes(term) ||
+      (result.pupilId || "").toLowerCase().includes(term) ||
+      (result.id || "").toLowerCase().includes(term)
 
     const matchesClass = selectedClass === "all" || result.class === selectedClass
     const matchesTerm = selectedTerm === "all" || result.term === selectedTerm
@@ -184,9 +93,9 @@ export default function ResultsPage() {
     return matchesSearch && matchesClass && matchesTerm && matchesStatus
   })
 
-  const handleDeleteClick = (result: (typeof resultsData)[number]) => {
-    setResultToDelete({ id: result.id, studentName: result.studentName })
-    setIsDeleteResultOpen(true)
+  const handleDeleteClick = (result: ResultRecord) => {
+    setResultToDelete({ id: result.id, pupilName: result.pupilName })
+    setIsDeleteOpen(true)
   }
 
   const handleConfirmDelete = () => {
@@ -198,12 +107,12 @@ export default function ResultsPage() {
       }
       return updated
     })
-    setIsDeleteResultOpen(false)
+    setIsDeleteOpen(false)
     setResultToDelete(null)
   }
 
   const handleCancelDelete = () => {
-    setIsDeleteResultOpen(false)
+    setIsDeleteOpen(false)
     setResultToDelete(null)
   }
 
@@ -274,27 +183,11 @@ export default function ResultsPage() {
               Results
             </Link>
             <Link
-              href="/admin/students"
+              href="/admin/pupils"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
-              Students
+              <Users className="h-4 w-4" />
+              Pupils
             </Link>
             <Link
               href="/admin/classes"
@@ -315,6 +208,36 @@ export default function ResultsPage() {
                 <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
               </svg>
               Classes
+            </Link>
+            <Link
+              href="/admin/attendance"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+              >
+                <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
+                <line x1="16" x2="16" y1="2" y2="6"></line>
+                <line x1="8" x2="8" y1="2" y2="6"></line>
+                <line x1="3" x2="21" y1="10" y2="10"></line>
+              </svg>
+              Attendance
+            </Link>
+            <Link
+              href="/admin/daily-reports"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+            >
+              <BookOpen className="h-4 w-4" />
+              Daily Reports
             </Link>
             <Link
               href="/admin/settings"
@@ -343,7 +266,7 @@ export default function ResultsPage() {
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8">
             <div className="grid gap-1">
               <h1 className="text-2xl font-bold tracking-tight">Results</h1>
-              <p className="text-muted-foreground">Manage and view all student results</p>
+              <p className="text-muted-foreground">Manage and view all pupil results</p>
             </div>
             <div className="flex-1 grid gap-4 md:grid-cols-2 lg:grid-cols-2 md:gap-8 md:ml-auto">
               <div className="flex items-center gap-2">
@@ -410,8 +333,8 @@ export default function ResultsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Student ID</TableHead>
-                      <TableHead>Student Name</TableHead>
+                      <TableHead>Pupil ID</TableHead>
+                      <TableHead>Pupil Name</TableHead>
                       <TableHead>Class</TableHead>
                       <TableHead>Term</TableHead>
                       <TableHead className="text-center">Average</TableHead>
@@ -426,8 +349,8 @@ export default function ResultsPage() {
                     {filteredResults.length > 0 ? (
                       filteredResults.map((result) => (
                         <TableRow key={result.id}>
-                          <TableCell className="font-medium">{result.studentId}</TableCell>
-                          <TableCell>{result.studentName}</TableCell>
+                          <TableCell className="font-medium">{result.pupilId}</TableCell>
+                          <TableCell>{result.pupilName}</TableCell>
                           <TableCell>{result.class}</TableCell>
                           <TableCell>{result.term}</TableCell>
                           <TableCell className="text-center">
@@ -469,7 +392,9 @@ export default function ResultsPage() {
                               className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                                 result.status === "Published"
                                   ? "bg-green-100 text-green-800"
-                                  : "bg-amber-100 text-amber-800"
+                                  : result.status === "Pending Approval"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-amber-100 text-amber-800"
                               }`}
                             >
                               {result.status}
@@ -477,6 +402,12 @@ export default function ResultsPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
+                              <Button variant="outline" size="icon" asChild>
+                                <Link href={`/admin/results/${result.id}/edit`}>
+                                  <Edit className="h-4 w-4" />
+                                  <span className="sr-only">Edit</span>
+                                </Link>
+                              </Button>
                               <Button variant="outline" size="icon" asChild>
                                 <Link href={`/parent/results/${result.id}`}>
                                   <FileText className="h-4 w-4" />
@@ -505,13 +436,13 @@ export default function ResultsPage() {
               </div>
             </CardContent>
           </Card>
-          <Dialog open={isDeleteResultOpen} onOpenChange={setIsDeleteResultOpen}>
+          <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
             <DialogContent className="sm:max-w-[400px]">
               <DialogHeader>
                 <DialogTitle>Delete result</DialogTitle>
                 <DialogDescription>
                   Are you sure you want to delete the result for{" "}
-                  <span className="font-semibold">{resultToDelete?.studentName}</span>? This action cannot be undone.
+                  <span className="font-semibold">{resultToDelete?.pupilName}</span>? This action cannot be undone.
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>

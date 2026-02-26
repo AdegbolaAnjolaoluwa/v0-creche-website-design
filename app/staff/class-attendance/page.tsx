@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { BookOpen, Check, ChevronDown, Home, LogOut, Menu, User, Users, X } from "lucide-react"
+import { ArrowLeft, BookOpen, Check, ChevronDown, Home, LogOut, Menu, User, Users, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,8 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { classesData } from "@/app/admin/classes/page"
-import { studentsData } from "@/app/admin/students/page"
+import { classesData, pupilsData } from "@/lib/data"
 
 type CurrentUser = {
   role: string
@@ -27,9 +26,9 @@ type CurrentUser = {
   classId?: string
 }
 
-type StudentAttendanceRecord = {
+type PupilAttendanceRecord = {
   id: string
-  studentId: string
+  pupilId: string
   classId: string
   staffEmail: string
   date: string
@@ -38,7 +37,7 @@ type StudentAttendanceRecord = {
   createdAt: string
 }
 
-const STUDENT_ATTENDANCE_KEY = "studentAttendance"
+const PUPIL_ATTENDANCE_KEY = "pupilAttendance"
 
 function formatDate(date: Date) {
   return date.toISOString().slice(0, 10)
@@ -52,8 +51,8 @@ export default function ClassAttendancePage() {
   const router = useRouter()
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
-  const [studentAttendance, setStudentAttendance] = useState<StudentAttendanceRecord[]>([])
-  const [todayStatuses, setTodayStatuses] = useState<Record<string, StudentAttendanceRecord["status"]>>({})
+  const [pupilAttendance, setPupilAttendance] = useState<PupilAttendanceRecord[]>([])
+  const [todayStatuses, setTodayStatuses] = useState<Record<string, PupilAttendanceRecord["status"]>>({})
   const [isSavingAttendance, setIsSavingAttendance] = useState(false)
 
   useEffect(() => {
@@ -77,13 +76,13 @@ export default function ClassAttendancePage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    const storedStudent = window.localStorage.getItem(STUDENT_ATTENDANCE_KEY)
-    if (storedStudent) {
+    const storedPupil = window.localStorage.getItem(PUPIL_ATTENDANCE_KEY)
+    if (storedPupil) {
       try {
-        const parsed = JSON.parse(storedStudent) as StudentAttendanceRecord[]
-        setStudentAttendance(parsed)
+        const parsed = JSON.parse(storedPupil) as PupilAttendanceRecord[]
+        setPupilAttendance(parsed)
       } catch {
-        setStudentAttendance([])
+        setPupilAttendance([])
       }
     }
   }, [])
@@ -93,38 +92,38 @@ export default function ClassAttendancePage() {
     [currentUser?.classId],
   )
 
-  const classStudents = useMemo(() => {
+  const classPupils = useMemo(() => {
     if (!assignedClass) return []
-    return studentsData.filter((student) => student.class === assignedClass.name)
+    return pupilsData.filter((pupil) => pupil.class === assignedClass.name)
   }, [assignedClass])
 
   const today = formatDate(new Date())
 
   useEffect(() => {
     if (!currentUser) return
-    const todaysRecords = studentAttendance.filter(
+    const todaysRecords = pupilAttendance.filter(
       (record) => record.classId === currentUser.classId && record.date === today && record.staffEmail === currentUser.email,
     )
-    const map: Record<string, StudentAttendanceRecord["status"]> = {}
+    const map: Record<string, PupilAttendanceRecord["status"]> = {}
     todaysRecords.forEach((record) => {
-      map[record.studentId] = record.status
+      map[record.pupilId] = record.status
     })
     setTodayStatuses(map)
-  }, [currentUser, studentAttendance, today])
+  }, [currentUser, pupilAttendance, today])
 
-  const recentStudentAttendance = useMemo(() => {
+  const recentPupilAttendance = useMemo(() => {
     if (!currentUser) return []
-    const records = studentAttendance
+    const records = pupilAttendance
       .filter((record) => record.classId === currentUser.classId && record.staffEmail === currentUser.email)
       .slice()
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     return records.slice(0, 20)
-  }, [currentUser, studentAttendance])
+  }, [currentUser, pupilAttendance])
 
-  const handleStatusChange = (studentId: string, status: StudentAttendanceRecord["status"]) => {
+  const handleStatusChange = (pupilId: string, status: PupilAttendanceRecord["status"]) => {
     setTodayStatuses((prev) => ({
       ...prev,
-      [studentId]: status,
+      [pupilId]: status,
     }))
   }
 
@@ -136,12 +135,12 @@ export default function ClassAttendancePage() {
     const date = formatDate(now)
     const time = formatTime(now)
     const createdAt = now.toISOString()
-    const newRecords: StudentAttendanceRecord[] = []
-    Object.entries(todayStatuses).forEach(([studentId, status]) => {
+    const newRecords: PupilAttendanceRecord[] = []
+    Object.entries(todayStatuses).forEach(([pupilId, status]) => {
       if (!status) return
-      const record: StudentAttendanceRecord = {
-        id: `${studentId}-${createdAt}`,
-        studentId,
+      const record: PupilAttendanceRecord = {
+        id: `${pupilId}-${createdAt}`,
+        pupilId,
         classId: currentUser.classId || "",
         staffEmail: currentUser.email || "",
         date,
@@ -155,9 +154,9 @@ export default function ClassAttendancePage() {
       setIsSavingAttendance(false)
       return
     }
-    const updated = [...studentAttendance, ...newRecords]
-    setStudentAttendance(updated)
-    window.localStorage.setItem(STUDENT_ATTENDANCE_KEY, JSON.stringify(updated))
+    const updated = [...pupilAttendance, ...newRecords]
+    setPupilAttendance(updated)
+    window.localStorage.setItem(PUPIL_ATTENDANCE_KEY, JSON.stringify(updated))
     setIsSavingAttendance(false)
   }
 
@@ -267,7 +266,15 @@ export default function ClassAttendancePage() {
       </header>
       <main className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-8">
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">Class Attendance</h1>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" asChild>
+              <Link href="/staff/dashboard">
+                <ArrowLeft className="h-4 w-4" />
+                <span className="sr-only">Back</span>
+              </Link>
+            </Button>
+            <h1 className="text-2xl font-bold tracking-tight">Class Attendance</h1>
+          </div>
           <p className="text-muted-foreground">
             Mark your class attendance for today and review recent records. Today is {today}.
           </p>
@@ -287,12 +294,12 @@ export default function ClassAttendancePage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Students in Class</CardTitle>
+              <CardTitle className="text-sm font-medium">Pupils in Class</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold">{classStudents.length}</div>
-              <p className="text-xs text-muted-foreground">Students you can mark attendance for</p>
+              <div className="text-xl font-bold">{classPupils.length}</div>
+              <p className="text-xs text-muted-foreground">Pupils you can mark attendance for</p>
             </CardContent>
           </Card>
         </div>
@@ -300,13 +307,13 @@ export default function ClassAttendancePage() {
           <CardHeader>
             <CardTitle>Today&apos;s Class Attendance</CardTitle>
             <CardDescription>
-              Mark each student as present, absent, or late for today.
+              Mark each pupil as present, absent, or late for today.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {classStudents.length === 0 ? (
+            {classPupils.length === 0 ? (
               <div className="text-sm text-muted-foreground">
-                No students found for your assigned class.
+                No pupils found for your assigned class.
               </div>
             ) : (
               <>
@@ -314,23 +321,25 @@ export default function ClassAttendancePage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Student</TableHead>
+                        <TableHead>Pupil</TableHead>
+                        <TableHead>ID</TableHead>
                         <TableHead className="w-[260px]">Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {classStudents.map((student) => {
-                        const status = todayStatuses[student.id]
+                      {classPupils.map((pupil) => {
+                        const status = todayStatuses[pupil.id]
                         return (
-                          <TableRow key={student.id}>
-                            <TableCell className="font-medium">{student.name}</TableCell>
+                          <TableRow key={pupil.id}>
+                            <TableCell className="font-medium">{pupil.name}</TableCell>
+                            <TableCell className="text-muted-foreground">{pupil.id}</TableCell>
                             <TableCell>
                               <div className="flex gap-2">
                                 <Button
                                   type="button"
                                   variant={status === "Present" ? "default" : "outline"}
                                   size="sm"
-                                  onClick={() => handleStatusChange(student.id, "Present")}
+                                  onClick={() => handleStatusChange(pupil.id, "Present")}
                                 >
                                   <Check className="mr-1 h-4 w-4" />
                                   Present
@@ -339,7 +348,7 @@ export default function ClassAttendancePage() {
                                   type="button"
                                   variant={status === "Absent" ? "default" : "outline"}
                                   size="sm"
-                                  onClick={() => handleStatusChange(student.id, "Absent")}
+                                  onClick={() => handleStatusChange(pupil.id, "Absent")}
                                 >
                                   <X className="mr-1 h-4 w-4" />
                                   Absent
@@ -348,7 +357,7 @@ export default function ClassAttendancePage() {
                                   type="button"
                                   variant={status === "Late" ? "default" : "outline"}
                                   size="sm"
-                                  onClick={() => handleStatusChange(student.id, "Late")}
+                                  onClick={() => handleStatusChange(pupil.id, "Late")}
                                 >
                                   Late
                                 </Button>
@@ -375,7 +384,7 @@ export default function ClassAttendancePage() {
             <CardDescription>Latest attendance you have recorded for this class.</CardDescription>
           </CardHeader>
           <CardContent>
-            {recentStudentAttendance.length === 0 ? (
+            {recentPupilAttendance.length === 0 ? (
               <div className="text-sm text-muted-foreground">
                 No attendance records yet. Save attendance for your class to see it here.
               </div>
@@ -384,18 +393,20 @@ export default function ClassAttendancePage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Student</TableHead>
+                      <TableHead>Pupil</TableHead>
+                      <TableHead>ID</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Time</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {recentStudentAttendance.map((record) => {
-                      const student = studentsData.find((s) => s.id === record.studentId)
+                    {recentPupilAttendance.map((record) => {
+                      const pupil = pupilsData.find((s) => s.id === record.pupilId)
                       return (
                         <TableRow key={record.id}>
-                          <TableCell>{student?.name || record.studentId}</TableCell>
+                          <TableCell>{pupil?.name || "Unknown"}</TableCell>
+                          <TableCell className="text-muted-foreground">{record.pupilId}</TableCell>
                           <TableCell>{record.status}</TableCell>
                           <TableCell>{record.date}</TableCell>
                           <TableCell>{record.time}</TableCell>

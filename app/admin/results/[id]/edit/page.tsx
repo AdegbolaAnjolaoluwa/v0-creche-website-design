@@ -5,7 +5,7 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { ArrowLeft, ChevronDown, LogOut, Save, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -55,12 +55,15 @@ type PupilAttendanceRecord = {
 
 const PUPIL_ATTENDANCE_KEY = "pupilAttendance"
 
-export default function NewResult() {
+export default function EditResult() {
   const router = useRouter()
-  const pathname = usePathname()
+  const params = useParams()
+  const resultId = params.id as string
+  
   const [isLoading, setIsLoading] = useState(false)
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
-  const [assignedClassName, setAssignedClassName] = useState<string | null>(null)
+  
+  // State for the form
   const [pupilId, setPupilId] = useState("")
   const [pupilName, setPupilName] = useState("")
   const [selectedClass, setSelectedClass] = useState("")
@@ -79,39 +82,80 @@ export default function NewResult() {
     router.push("/login?type=staff")
   }
 
+  // Load User and Result
   useEffect(() => {
     if (typeof window === "undefined") return
+    
+    // 1. Check User
     const storedUser = window.localStorage.getItem("currentUser")
     if (!storedUser) {
-      router.push("/login?type=staff")
+      router.push("/login?type=admin")
       return
     }
     try {
       const parsed = JSON.parse(storedUser) as CurrentUser
-      if (parsed.role !== "staff" || !parsed.classId) {
-        router.push("/login?type=staff")
+      if (parsed.role !== "admin") {
+        // Only admins can edit via this page
+        router.push("/login?type=admin")
         return
       }
       setCurrentUser(parsed)
-      const assignedClass = classesData.find((cls) => cls.id === parsed.classId)
-      setAssignedClassName(assignedClass ? assignedClass.name : null)
-      if (assignedClass) {
-        const key = mapPupilClassToKey(assignedClass.name)
-        if (key) {
-          handleClassChange(key)
-        }
-      }
     } catch {
-      router.push("/login?type=staff")
+      router.push("/login?type=admin")
+      return
     }
-  }, [router])
 
-  const mapPupilClassToKey = (className: string) => {
-    if (className === "Creche") return "creche"
-    if (className === "Nursery 1") return "nursery-1"
-    if (className === "Nursery 2") return "nursery-2"
-    return ""
-  }
+    // 2. Load Result
+    const storedResults = window.localStorage.getItem(RESULTS_STORAGE_KEY)
+    let allResults: ResultRecord[] = resultsData
+    if (storedResults) {
+      try {
+        allResults = JSON.parse(storedResults)
+      } catch {
+        allResults = resultsData
+      }
+    }
+
+    const result = allResults.find(r => r.id === resultId)
+    if (!result) {
+      // If result not found, go back
+      router.push("/admin/results")
+      return
+    }
+
+    // 3. Populate Form
+    setPupilId(result.pupilId)
+    setPupilName(result.pupilName)
+    
+    // Convert Label to Key for Class
+    const classKey = result.class === "Creche" ? "creche" : 
+                     result.class === "Nursery 1" ? "nursery-1" :
+                     result.class === "Nursery 2" ? "nursery-2" : ""
+    setSelectedClass(classKey)
+    
+    // Convert Label to Key for Term
+    const termKey = result.term === "Term 1" ? "term-1" :
+                    result.term === "Term 2" ? "term-2" :
+                    result.term === "Term 3" ? "term-3" : ""
+    setSelectedTerm(termKey)
+    
+    setSelectedStatus(result.status)
+    setTeacherComment(result.teacherComment || "")
+    setProprietressComment(result.proprietressComment || "")
+    
+    // Load scores if they exist, otherwise initialize empty
+    if (result.scores) {
+      setScores(result.scores)
+    } else {
+      const initialScores: Record<string, { midterm: string; exam: string }> = {}
+      const classSubjects = subjects[classKey as keyof typeof subjects] ?? []
+      classSubjects.forEach((subject) => {
+        initialScores[subject] = { midterm: "", exam: "" }
+      })
+      setScores(initialScores)
+    }
+
+  }, [router, resultId])
 
   const mapClassKeyToLabel = (classKey: string) => {
     if (classKey === "creche") return "Creche"
@@ -125,40 +169,6 @@ export default function NewResult() {
     if (termKey === "term-2") return "Term 2"
     if (termKey === "term-3") return "Term 3"
     return termKey
-  }
-
-  const findPupil = (value: string): Pupil | undefined => {
-    const trimmed = value.trim()
-    if (!trimmed) return undefined
-    const lower = trimmed.toLowerCase()
-    const allowedPupils =
-      assignedClassName != null ? pupilsData.filter((pupil) => pupil.class === assignedClassName) : pupilsData
-    return (
-      allowedPupils.find((pupil) => pupil.id.toLowerCase() === lower) ||
-      allowedPupils.find((pupil) => pupil.name.toLowerCase() === lower)
-    )
-  }
-
-  const handlePupilMatch = (pupil: Pupil | undefined) => {
-    if (!pupil) return
-    setPupilId(pupil.id)
-    setPupilName(pupil.name)
-    const classKey = mapPupilClassToKey(pupil.class)
-    if (classKey) {
-      handleClassChange(classKey)
-    }
-  }
-
-  const handleClassChange = (value: string) => {
-    setSelectedClass(value)
-
-    // Initialize scores for the selected class subjects
-    const initialScores: Record<string, { midterm: string; exam: string }> = {}
-    const classSubjects = subjects[value as keyof typeof subjects] ?? []
-    classSubjects.forEach((subject) => {
-      initialScores[subject] = { midterm: "", exam: "" }
-    })
-    setScores(initialScores)
   }
 
   const handleScoreChange = (subject: string, type: "midterm" | "exam", value: string) => {
@@ -196,31 +206,7 @@ export default function NewResult() {
 
     setTimeout(() => {
       if (typeof window !== "undefined") {
-        if (!currentUser || !currentUser.classId || !assignedClassName) {
-          setIsLoading(false)
-          router.push("/login?type=staff")
-          return
-        }
-
-        const assignedClass = classesData.find((cls) => cls.id === currentUser.classId)
-        if (!assignedClass || assignedClass.name !== assignedClassName) {
-          setIsLoading(false)
-          router.push("/login?type=staff")
-          return
-        }
-
-        const selectedClassLabel = mapClassKeyToLabel(selectedClass)
-        if (selectedClassLabel !== assignedClass.name) {
-          setIsLoading(false)
-          return
-        }
-
-        const matchedPupil = pupilsData.find((pupil) => pupil.id === pupilId)
-        if (!matchedPupil || matchedPupil.class !== assignedClass.name) {
-          setIsLoading(false)
-          return
-        }
-
+        
         const stored = window.localStorage.getItem(RESULTS_STORAGE_KEY)
         let current: ResultRecord[] = resultsData
         if (stored) {
@@ -243,6 +229,7 @@ export default function NewResult() {
 
         const roundedAverageScore = Number(averageScore.toFixed(1))
 
+        // Recalculate attendance (optional, but good to keep fresh)
         let attendancePercentage = 0
         if (pupilId) {
           const attendanceRaw = window.localStorage.getItem(PUPIL_ATTENDANCE_KEY)
@@ -273,26 +260,18 @@ export default function NewResult() {
         const attendanceScore = calculateAttendanceScore(attendancePercentage)
         const finalScore = calculateFinalScore(roundedAverageScore, attendanceScore)
 
-        const numericId = current.reduce((max, result) => {
-          const value = Number(result.id.replace("R", ""))
-          if (Number.isNaN(value)) return max
-          return value > max ? value : max
-        }, 0)
-
-        const newIdNumber = numericId + 1
-        const newId = `R${String(newIdNumber).padStart(3, "0")}`
-
-        const newResult: ResultRecord = {
-          id: newId,
+        // Create updated result object
+        const updatedResult: ResultRecord = {
+          id: resultId, // Keep existing ID
           pupilId,
           pupilName,
           class: mapClassKeyToLabel(selectedClass),
           term: mapTermKeyToLabel(selectedTerm),
           averageScore: roundedAverageScore,
           grade: getGrade(roundedAverageScore),
-          date: new Date().toISOString().slice(0, 10),
-          status: currentUser.role === "admin" ? (selectedStatus || "Draft") : "Pending Approval",
-          proprietressComment: currentUser.role === "admin" ? proprietressComment : undefined,
+          date: new Date().toISOString().slice(0, 10), // Update date? Or keep original? Let's update to last edit.
+          status: selectedStatus,
+          proprietressComment: proprietressComment,
           attendancePercentage,
           attendanceScore,
           finalScore: Number(finalScore.toFixed(1)),
@@ -300,23 +279,22 @@ export default function NewResult() {
           teacherComment,
         }
 
-        const updated = [...current, newResult]
-        window.localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(updated))
+        // Replace the old result with the new one
+        const updatedList = current.map(r => r.id === resultId ? updatedResult : r)
+        window.localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(updatedList))
       }
 
       setIsLoading(false)
-      if (currentUser?.role === "admin") {
-        router.push("/admin/results")
-      } else {
-        router.push("/staff/dashboard")
-      }
+      router.push("/admin/results")
     }, 1500)
   }
+
+  if (!currentUser) return null
 
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-        <Link href="/staff/dashboard" className="flex items-center gap-2 font-semibold">
+        <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
           <Image
             src="/logo.jpg"
             alt="Bayhood Preparatory School logo"
@@ -330,7 +308,7 @@ export default function NewResult() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="relative h-8 flex items-center gap-2">
               <User className="h-4 w-4" />
-              <span className="hidden md:inline-block">{currentUser?.email || "Staff Account"}</span>
+              <span className="hidden md:inline-block">{currentUser?.email || "Admin Account"}</span>
               <ChevronDown className="h-4 w-4 opacity-50" />
             </Button>
           </DropdownMenuTrigger>
@@ -348,97 +326,54 @@ export default function NewResult() {
         <div className="mx-auto max-w-4xl">
           <div className="flex items-center gap-4 mb-8">
             <Button variant="outline" size="icon" asChild>
-              <Link href={(pathname || "").startsWith("/staff") ? "/staff/dashboard" : "/admin/results"}>
+              <Link href="/admin/results">
                 <ArrowLeft className="h-4 w-4" />
                 <span className="sr-only">Back</span>
               </Link>
             </Button>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Add New Result</h1>
-              <p className="text-muted-foreground">Enter pupil details and scores to generate a result</p>
+              <h1 className="text-2xl font-bold tracking-tight">Edit Result</h1>
+              <p className="text-muted-foreground">Update scores, comments, and status for {pupilName}</p>
             </div>
           </div>
 
           <form onSubmit={handleSubmit}>
-            <Tabs defaultValue="pupil" className="space-y-4">
+            <Tabs defaultValue="scores" className="space-y-4">
               <TabsList className="w-full justify-start">
-                <TabsTrigger value="pupil">Pupil Information</TabsTrigger>
                 <TabsTrigger value="scores">Scores & Preview</TabsTrigger>
+                <TabsTrigger value="pupil">Pupil Information</TabsTrigger>
               </TabsList>
+              
               <TabsContent value="pupil">
+                 {/* Read-only pupil info for context */}
                 <Card className="mb-8">
                   <CardHeader>
                     <CardTitle>Pupil Information</CardTitle>
                     <CardDescription>
-                      Enter the pupil details, select the class and term, and add comments
+                      Review details (Editing pupil info is restricted to ensure data integrity)
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="pupil-id">Pupil ID</Label>
-                        <Input
-                          id="pupil-id"
-                          placeholder="Enter pupil ID"
-                          value={pupilId}
-                          onChange={(e) => {
-                            const value = e.target.value
-                            setPupilId(value)
-                            const match = findPupil(value)
-                            if (match) {
-                              handlePupilMatch(match)
-                            }
-                          }}
-                          required
-                        />
+                        <Input id="pupil-id" value={pupilId} disabled />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="pupil-name">Pupil Name</Label>
-                        <Input
-                          id="pupil-name"
-                          placeholder="Enter pupil name"
-                          value={pupilName}
-                          onChange={(e) => {
-                            const value = e.target.value
-                            setPupilName(value)
-                            const match = findPupil(value)
-                            if (match) {
-                              handlePupilMatch(match)
-                            }
-                          }}
-                          required
-                        />
+                        <Input id="pupil-name" value={pupilName} disabled />
                       </div>
                     </div>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                      <div className="space-y-2">
+                       <div className="space-y-2">
                         <Label htmlFor="class">Class</Label>
-                        <Select required value={selectedClass} onValueChange={handleClassChange}>
-                          <SelectTrigger id="class">
-                            <SelectValue placeholder="Select class" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="creche">Creche</SelectItem>
-                            <SelectItem value="nursery-1">Nursery 1</SelectItem>
-                            <SelectItem value="nursery-2">Nursery 2</SelectItem>
-                          </SelectContent>
-                        </Select>
+                         <Input value={mapClassKeyToLabel(selectedClass)} disabled />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="term">Term</Label>
-                        <Select required value={selectedTerm} onValueChange={setSelectedTerm}>
-                          <SelectTrigger id="term">
-                            <SelectValue placeholder="Select term" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="term-1">Term 1</SelectItem>
-                            <SelectItem value="term-2">Term 2</SelectItem>
-                            <SelectItem value="term-3">Term 3</SelectItem>
-                          </SelectContent>
-                        </Select>
+                         <Input value={mapTermKeyToLabel(selectedTerm)} disabled />
                       </div>
-                      {currentUser?.role === "admin" && (
-                        <div className="space-y-2">
+                       <div className="space-y-2">
                           <Label htmlFor="status">Status</Label>
                           <Select required value={selectedStatus} onValueChange={setSelectedStatus}>
                             <SelectTrigger id="status">
@@ -451,22 +386,22 @@ export default function NewResult() {
                             </SelectContent>
                           </Select>
                         </div>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
+
               <TabsContent value="scores">
                 {selectedClass && (
                   <Card className="mb-8">
                     <CardHeader>
                       <CardTitle>Subject Scores</CardTitle>
-                      <CardDescription>Enter midterm and exam scores for each subject</CardDescription>
+                      <CardDescription>Update midterm and exam scores</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <Tabs defaultValue="scores" className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="scores">Enter Scores</TabsTrigger>
+                          <TabsTrigger value="scores">Update Scores</TabsTrigger>
                           <TabsTrigger value="preview">Preview Result</TabsTrigger>
                         </TabsList>
                         <TabsContent value="scores" className="space-y-4 pt-4">
@@ -608,6 +543,12 @@ export default function NewResult() {
                                   {teacherComment || "No comment provided."}
                                 </p>
                               </div>
+                              <div className="mt-4 p-4 border rounded-md bg-muted/10">
+                                <h4 className="font-medium mb-2">Proprietress's Comment</h4>
+                                <p className="text-sm whitespace-pre-line">
+                                  {proprietressComment || "No comment provided."}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </TabsContent>
@@ -615,55 +556,58 @@ export default function NewResult() {
                     </CardContent>
                   </Card>
                 )}
-                <Card className="mb-8">
-                  <CardHeader>
-                    <CardTitle>Teacher's Comment</CardTitle>
-                    <CardDescription>Write a brief comment after reviewing the scores.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <Label htmlFor="teacher-comment">Teacher's Comment</Label>
-                      <Textarea
-                        id="teacher-comment"
-                        placeholder="Write a brief comment about the pupil's performance"
-                        value={teacherComment}
-                        onChange={(e) => setTeacherComment(e.target.value)}
-                        rows={3}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-                {currentUser?.role === "admin" && (
-                  <Card className="mb-8">
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <Card className="mb-8">
                     <CardHeader>
-                      <CardTitle>Proprietress's Comment</CardTitle>
-                      <CardDescription>Add a comment from the school proprietress.</CardDescription>
+                        <CardTitle>Teacher's Comment</CardTitle>
+                        <CardDescription>Review or update the teacher's comment.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-2">
+                        <div className="space-y-2">
+                        <Label htmlFor="teacher-comment">Teacher's Comment</Label>
+                        <Textarea
+                            id="teacher-comment"
+                            placeholder="Write a brief comment about the pupil's performance"
+                            value={teacherComment}
+                            onChange={(e) => setTeacherComment(e.target.value)}
+                            rows={3}
+                        />
+                        </div>
+                    </CardContent>
+                    </Card>
+
+                    <Card className="mb-8">
+                    <CardHeader>
+                        <CardTitle>Proprietress's Comment</CardTitle>
+                        <CardDescription>Add or update the proprietress's comment.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-2">
                         <Label htmlFor="proprietress-comment">Proprietress's Comment</Label>
                         <Textarea
-                          id="proprietress-comment"
-                          placeholder="Write a comment from the proprietress"
-                          value={proprietressComment}
-                          onChange={(e) => setProprietressComment(e.target.value)}
-                          rows={3}
+                            id="proprietress-comment"
+                            placeholder="Write a comment from the proprietress"
+                            value={proprietressComment}
+                            onChange={(e) => setProprietressComment(e.target.value)}
+                            rows={3}
                         />
-                      </div>
+                        </div>
                     </CardContent>
-                  </Card>
-                )}
+                    </Card>
+                </div>
+
                 <div className="flex justify-end gap-4">
                   <Button variant="outline" type="button" onClick={() => router.back()}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isLoading || !selectedClass || !selectedTerm || (currentUser?.role === 'admin' && !selectedStatus)}>
+                  <Button type="submit" disabled={isLoading || !selectedClass || !selectedTerm || !selectedStatus}>
                     {isLoading ? (
-                      "Saving..."
+                      "Updating..."
                     ) : (
                       <>
                         <Save className="mr-2 h-4 w-4" />
-                        Save Result
+                        Update Result
                       </>
                     )}
                   </Button>

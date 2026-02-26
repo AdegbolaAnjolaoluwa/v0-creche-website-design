@@ -72,7 +72,7 @@ export default function AboutPage() {
                 </p>
                 <p className="text-muted-foreground">
                   Today, Little Learners continues to uphold these founding principles while incorporating modern
-                  educational approaches and technology to prepare our students for the future.
+                  educational approaches and technology to prepare our pupils for the future.
                 </p>
               </div>
               <div className="rounded-lg overflow-hidden">

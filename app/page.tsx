@@ -34,9 +34,9 @@ export default function Home() {
             </Link>
           </nav>
           <div className="flex items-center gap-4">
-            <Link href="/login">
+            <Link href="/login?type=staff">
               <Button variant="outline" size="sm">
-                Login
+                Staff Login
               </Button>
             </Link>
             <Link href="/login?type=parent">
@@ -299,7 +299,7 @@ export default function Home() {
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
-                  <Link href="/login">
+                  <Link href="/login?type=staff">
                     <Button variant="outline" className="w-full min-[400px]:w-auto">
                       Staff Login
                     </Button>
@@ -420,11 +420,10 @@ export default function Home() {
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-xl font-bold">Contact Information</h3>
-                  <p className="text-muted-foreground">
-                    Phone: 0809 811 2378
-                    <br />
-                    Email: bayhoodpreperatoryschool@gmail.com
-                  </p>
+                  <div className="text-muted-foreground">
+                    <p>Phone: 0809 811 2378</p>
+                    <p>Email: bayhoodpreperatoryschool@gmail.com</p>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-xl font-bold">Hours of Operation</h3>

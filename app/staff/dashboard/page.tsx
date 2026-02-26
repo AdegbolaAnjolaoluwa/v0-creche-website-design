@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { BarChart3, BookOpen, Check, ChevronDown, Home, LogOut, Menu, User, Users, X } from "lucide-react"
+import { ArrowRight, BarChart3, BookOpen, Check, ChevronDown, GraduationCap, Home, LogOut, Menu, User, Users, X, Calendar } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,8 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { classesData } from "@/app/admin/classes/page"
-import { studentsData } from "@/app/admin/students/page"
+import { classesData, pupilsData } from "@/lib/data"
 
 type CurrentUser = {
   role: string
@@ -35,9 +34,9 @@ type StaffAttendanceRecord = {
   createdAt: string
 }
 
-type StudentAttendanceRecord = {
+type PupilAttendanceRecord = {
   id: string
-  studentId: string
+  pupilId: string
   classId: string
   staffEmail: string
   date: string
@@ -60,8 +59,15 @@ type DailyReport = {
 }
 
 const STAFF_ATTENDANCE_KEY = "staffAttendance"
-const STUDENT_ATTENDANCE_KEY = "studentAttendance"
+const PUPIL_ATTENDANCE_KEY = "pupilAttendance"
 const DAILY_REPORTS_KEY = "dailyReports"
+const LEAVE_REQUESTS_KEY = "staffLeaveRequests"
+
+type LeaveRequest = {
+  id: string
+  staffEmail: string
+  status: "Pending" | "Approved" | "Rejected"
+}
 
 function formatDate(date: Date) {
   return date.toISOString().slice(0, 10)
@@ -85,8 +91,8 @@ export default function StaffDashboard() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
   const [staffAttendance, setStaffAttendance] = useState<StaffAttendanceRecord[]>([])
-  const [studentAttendance, setStudentAttendance] = useState<StudentAttendanceRecord[]>([])
-  const [todayStatuses, setTodayStatuses] = useState<Record<string, StudentAttendanceRecord["status"]>>({})
+  const [pupilAttendance, setPupilAttendance] = useState<PupilAttendanceRecord[]>([])
+  const [todayStatuses, setTodayStatuses] = useState<Record<string, PupilAttendanceRecord["status"]>>({})
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [isSavingAttendance, setIsSavingAttendance] = useState(false)
   const [dailyReports, setDailyReports] = useState<DailyReport[]>([])
@@ -96,6 +102,7 @@ export default function StaffDashboard() {
   const [reportHomework, setReportHomework] = useState("")
   const [reportGeneralComment, setReportGeneralComment] = useState("")
   const [isSavingReport, setIsSavingReport] = useState(false)
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -119,8 +126,9 @@ export default function StaffDashboard() {
   useEffect(() => {
     if (typeof window === "undefined") return
     const storedStaff = window.localStorage.getItem(STAFF_ATTENDANCE_KEY)
-    const storedStudent = window.localStorage.getItem(STUDENT_ATTENDANCE_KEY)
+    const storedPupil = window.localStorage.getItem(PUPIL_ATTENDANCE_KEY)
     const storedReports = window.localStorage.getItem(DAILY_REPORTS_KEY)
+    const storedLeave = window.localStorage.getItem(LEAVE_REQUESTS_KEY)
     if (storedStaff) {
       try {
         const parsed = JSON.parse(storedStaff) as StaffAttendanceRecord[]
@@ -129,12 +137,12 @@ export default function StaffDashboard() {
         setStaffAttendance([])
       }
     }
-    if (storedStudent) {
+    if (storedPupil) {
       try {
-        const parsed = JSON.parse(storedStudent) as StudentAttendanceRecord[]
-        setStudentAttendance(parsed)
+        const parsed = JSON.parse(storedPupil) as PupilAttendanceRecord[]
+        setPupilAttendance(parsed)
       } catch {
-        setStudentAttendance([])
+        setPupilAttendance([])
       }
     }
     if (storedReports) {
@@ -145,29 +153,37 @@ export default function StaffDashboard() {
         setDailyReports([])
       }
     }
+    if (storedLeave) {
+      try {
+        const parsed = JSON.parse(storedLeave) as LeaveRequest[]
+        setLeaveRequests(parsed)
+      } catch {
+        setLeaveRequests([])
+      }
+    }
   }, [])
 
   useEffect(() => {
     if (!currentUser) return
     const today = formatDate(new Date())
-    const todaysRecords = studentAttendance.filter(
+    const todaysRecords = pupilAttendance.filter(
       (record) => record.classId === currentUser.classId && record.date === today && record.staffEmail === currentUser.email,
     )
-    const map: Record<string, StudentAttendanceRecord["status"]> = {}
+    const map: Record<string, PupilAttendanceRecord["status"]> = {}
     todaysRecords.forEach((record) => {
-      map[record.studentId] = record.status
+      map[record.pupilId] = record.status
     })
     setTodayStatuses(map)
-  }, [currentUser, studentAttendance])
+  }, [currentUser, pupilAttendance])
 
   const assignedClass = useMemo(
     () => classesData.find((cls) => cls.id === currentUser?.classId),
     [currentUser?.classId],
   )
 
-  const classStudents = useMemo(() => {
+  const classPupils = useMemo(() => {
     if (!assignedClass) return []
-    return studentsData.filter((student) => student.class === assignedClass.name)
+    return pupilsData.filter((pupil) => pupil.class === assignedClass.name)
   }, [assignedClass])
 
   const todayStaffAttendance = useMemo(() => {
@@ -176,14 +192,13 @@ export default function StaffDashboard() {
     return staffAttendance.filter((record) => record.staffEmail === currentUser.email && record.date === today)
   }, [currentUser, staffAttendance])
 
-  const recentStudentAttendance = useMemo(() => {
+  const recentPupilAttendance = useMemo(() => {
     if (!currentUser) return []
-    const records = studentAttendance
-      .filter((record) => record.classId === currentUser.classId && record.staffEmail === currentUser.email)
-      .slice()
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    return records.slice(0, 10)
-  }, [currentUser, studentAttendance])
+    return pupilAttendance
+      .filter((record) => record.classId === currentUser.classId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 10)
+  }, [currentUser, pupilAttendance])
 
   const today = formatDate(new Date())
 
@@ -250,10 +265,10 @@ export default function StaffDashboard() {
     setIsSigningIn(false)
   }
 
-  const handleStatusChange = (studentId: string, status: StudentAttendanceRecord["status"]) => {
+  const handleStatusChange = (pupilId: string, status: PupilAttendanceRecord["status"]) => {
     setTodayStatuses((prev) => ({
       ...prev,
-      [studentId]: status,
+      [pupilId]: status,
     }))
   }
 
@@ -265,12 +280,12 @@ export default function StaffDashboard() {
     const date = formatDate(now)
     const time = formatTime(now)
     const createdAt = now.toISOString()
-    const newRecords: StudentAttendanceRecord[] = []
-    Object.entries(todayStatuses).forEach(([studentId, status]) => {
+    const newRecords: PupilAttendanceRecord[] = []
+    Object.entries(todayStatuses).forEach(([pupilId, status]) => {
       if (!status) return
-      const record: StudentAttendanceRecord = {
-        id: `${studentId}-${createdAt}`,
-        studentId,
+      const record: PupilAttendanceRecord = {
+        id: `${pupilId}-${createdAt}`,
+        pupilId,
         classId: currentUser.classId || "",
         staffEmail: currentUser.email || "",
         date,
@@ -284,9 +299,9 @@ export default function StaffDashboard() {
       setIsSavingAttendance(false)
       return
     }
-    const updated = [...studentAttendance, ...newRecords]
-    setStudentAttendance(updated)
-    window.localStorage.setItem(STUDENT_ATTENDANCE_KEY, JSON.stringify(updated))
+    const updated = [...pupilAttendance, ...newRecords]
+    setPupilAttendance(updated)
+    window.localStorage.setItem(PUPIL_ATTENDANCE_KEY, JSON.stringify(updated))
     setIsSavingAttendance(false)
   }
 
@@ -341,8 +356,13 @@ export default function StaffDashboard() {
     router.push("/login?type=staff")
   }
 
+  const pendingLeaveCount = useMemo(() => {
+    if (!currentUser) return 0
+    return leaveRequests.filter(req => req.staffEmail === currentUser.email && req.status === "Pending").length
+  }, [currentUser, leaveRequests])
+
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-slate-50/50">
       <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
         <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
           <SheetTrigger asChild>
@@ -399,6 +419,22 @@ export default function StaffDashboard() {
                   <BookOpen className="h-5 w-5" />
                   Daily Report
                 </Link>
+                <Link
+                  href="/staff/leave"
+                  className="flex items-center gap-2"
+                  onClick={() => setIsMobileNavOpen(false)}
+                >
+                  <Calendar className="h-5 w-5" />
+                  Leave Request
+                </Link>
+                <Link
+                  href="/staff/pupils"
+                  className="flex items-center gap-2"
+                  onClick={() => setIsMobileNavOpen(false)}
+                >
+                  <Users className="h-5 w-5" />
+                  My Pupils
+                </Link>
               </div>
             </nav>
           </SheetContent>
@@ -430,6 +466,18 @@ export default function StaffDashboard() {
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
             </DropdownMenuItem>
+            <Link href="/staff/leave">
+              <DropdownMenuItem>
+                <Calendar className="mr-2 h-4 w-4" />
+                <span>Leave Request</span>
+              </DropdownMenuItem>
+            </Link>
+            <Link href="/staff/pupils">
+              <DropdownMenuItem>
+                <Users className="mr-2 h-4 w-4" />
+                <span>My Pupils</span>
+              </DropdownMenuItem>
+            </Link>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
@@ -438,122 +486,247 @@ export default function StaffDashboard() {
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
-      <main className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-8">
+      <main className="flex flex-1 flex-col gap-8 p-4 md:gap-12 md:p-12">
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">Staff Overview</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-800">Staff Overview</h1>
           <p className="text-muted-foreground">Quick summary for today, {today}. Use the menu to manage details.</p>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="border-t-4 border-t-blue-500 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Staff Email</CardTitle>
-              <User className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Staff Email
+              </CardTitle>
+              <div className="rounded-full bg-blue-50 p-1">
+                <span className="text-blue-500 text-xs font-bold px-1">@</span>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold">{currentUser?.email || "Not set"}</div>
-              <p className="text-xs text-muted-foreground">Signed in as class teacher</p>
+              <div className="text-xl font-bold text-slate-800">{currentUser?.email || "Not set"}</div>
+              <p className="text-xs text-muted-foreground mt-1 font-medium">Signed in as class teacher</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-t-4 border-t-green-500 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Assigned Class</CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Assigned Class
+              </CardTitle>
+              <div className="rounded-full bg-green-50 p-1">
+                <GraduationCap className="h-4 w-4 text-green-500" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold">{assignedClass?.name || "No class"}</div>
-              <p className="text-xs text-muted-foreground">
-                {assignedClass ? assignedClass.ageRange : "Set during login"}
+              <div className="text-xl font-bold text-slate-800">{assignedClass?.name || "No class"}</div>
+              <p className="text-xs text-muted-foreground mt-1 font-medium">
+                Age group: {assignedClass ? assignedClass.ageRange : "Set during login"}
               </p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-t-4 border-t-orange-500 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Students in Class</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Pupils in Class
+              </CardTitle>
+              <div className="rounded-full bg-orange-50 p-1">
+                <Users className="h-4 w-4 text-orange-500" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold">{classStudents.length}</div>
-              <p className="text-xs text-muted-foreground">Students you can mark attendance for</p>
+              <div className="text-xl font-bold text-slate-800">{classPupils.length}</div>
+              <p className="text-xs text-muted-foreground mt-1 font-medium">Active attendance track</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-t-4 border-t-red-500 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Today Sign-Ins</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Today Sign-Ins
+              </CardTitle>
+              <div className="rounded-full bg-red-50 p-1">
+                <BarChart3 className="h-4 w-4 text-red-500" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold">{todayStaffAttendance.length}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-xl font-bold text-slate-800">{todayStaffAttendance.length}</div>
+              <p className="text-xs text-red-500 mt-1 font-semibold">
                 {todayStaffAttendance.length > 0
                   ? "You have signed in for today."
                   : isSignInClosed
-                    ? "Sign in closed. You are late for today."
-                    : "No sign-in recorded yet for today."}
+                    ? "Late for today"
+                    : "No sign-in recorded yet."}
               </p>
             </CardContent>
           </Card>
+          <Card className="border-t-4 border-t-purple-500 shadow-sm relative group">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Leave Status
+              </CardTitle>
+              <div className="rounded-full bg-purple-50 p-1">
+                <Calendar className="h-4 w-4 text-purple-500" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold text-slate-800">{pendingLeaveCount}</div>
+              <p className="text-xs text-muted-foreground mt-1 font-medium">Pending Requests</p>
+            </CardContent>
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+               <Button size="sm" variant="secondary" asChild className="shadow-sm">
+                 <Link href="/staff/leave">Manage Leave</Link>
+               </Button>
+            </div>
+          </Card>
         </div>
-        <div className="grid gap-6 lg:grid-cols-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>My Attendance</CardTitle>
-              <CardDescription>Record and review your personal sign-ins.</CardDescription>
+
+        <div className="grid gap-8 md:grid-cols-2">
+          <Card className="relative p-6 pt-10 shadow-sm hover:shadow-md transition-shadow">
+            <div className="absolute top-6 left-6 rounded-full bg-blue-100 p-3">
+              <User className="h-6 w-6 text-blue-500" />
+            </div>
+            <div className="absolute top-10 right-10 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
+              {todayStaffAttendance.length}
+            </div>
+            <CardHeader className="px-0 pt-8">
+              <CardTitle className="text-2xl font-bold text-slate-800">My Attendance</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="text-sm text-muted-foreground">
-                Sign-ins recorded today: <span className="font-semibold">{todayStaffAttendance.length}</span>
-              </div>
-              <Button asChild variant="outline" className="w-full">
-                <Link href="/staff/my-attendance">Open My Attendance</Link>
-              </Button>
+            <CardContent className="px-0 pb-8">
+              <p className="text-slate-500 font-medium leading-relaxed">
+                Record and review your personal sign-ins. Keep track of your working hours and punctualities.
+              </p>
             </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Class Attendance</CardTitle>
-              <CardDescription>Mark and view attendance for your class.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="text-sm text-muted-foreground">
-                Students in your class: <span className="font-semibold">{classStudents.length}</span>
+            <div className="pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-sm font-semibold text-slate-700">Sign-ins recorded today</span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
+                  {todayStaffAttendance.length}
+                </span>
               </div>
-              <Button asChild variant="outline" className="w-full">
-                <Link href="/staff/class-attendance">Open Class Attendance</Link>
+              <Button asChild className="w-full bg-amber-400 hover:bg-amber-500 text-amber-900 font-bold h-12 rounded-xl border-none">
+                <Link href="/staff/my-attendance" className="flex items-center justify-center gap-2">
+                  Open My Attendance <ArrowRight className="h-5 w-5" />
+                </Link>
               </Button>
-            </CardContent>
+            </div>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Daily Report</CardTitle>
-              <CardDescription>Submit and review your daily class report.</CardDescription>
+
+          <Card className="relative p-6 pt-10 shadow-sm hover:shadow-md transition-shadow">
+            <div className="absolute top-6 left-6 rounded-full bg-green-100 p-3">
+              <Users className="h-6 w-6 text-green-500" />
+            </div>
+            <div className="absolute top-10 right-10 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
+              {classPupils.length}
+            </div>
+            <CardHeader className="px-0 pt-8">
+              <CardTitle className="text-2xl font-bold text-slate-800">Class Attendance</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="text-sm text-muted-foreground">
-                Reports recorded for this class: <span className="font-semibold">{myReports.length}</span>
+            <CardContent className="px-0 pb-8">
+              <p className="text-slate-500 font-medium leading-relaxed">
+                Mark and view attendance for your class. Ensure all pupils are accounted for daily.
+              </p>
+            </CardContent>
+            <div className="pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-sm font-semibold text-slate-700">Pupils in your class</span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
+                  {classPupils.length}
+                </span>
               </div>
-              <Button asChild variant="outline" className="w-full">
-                <Link href="/staff/daily-report">Open Daily Report</Link>
+              <Button asChild className="w-full bg-green-500 hover:bg-green-600 text-white font-bold h-12 rounded-xl border-none">
+                <Link href="/staff/class-attendance" className="flex items-center justify-center gap-2">
+                  Open Class Attendance <ArrowRight className="h-5 w-5" />
+                </Link>
               </Button>
-            </CardContent>
+            </div>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Results</CardTitle>
-              <CardDescription>Upload and view results for your class.</CardDescription>
+
+          <Card className="relative p-6 pt-10 shadow-sm hover:shadow-md transition-shadow">
+            <div className="absolute top-6 left-6 rounded-full bg-amber-100 p-3">
+              <BookOpen className="h-6 w-6 text-amber-600" />
+            </div>
+            <div className="absolute top-10 right-10 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
+              {myReports.length}
+            </div>
+            <CardHeader className="px-0 pt-8">
+              <CardTitle className="text-2xl font-bold text-slate-800">Daily Report</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="text-sm text-muted-foreground">
-                Use this to create and review student results.
+            <CardContent className="px-0 pb-8">
+              <p className="text-slate-500 font-medium leading-relaxed">
+                Submit and review your daily class report including milestones and specific activities.
+              </p>
+            </CardContent>
+            <div className="pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-sm font-semibold text-slate-700">Reports recorded for this class</span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
+                  {myReports.length}
+                </span>
               </div>
-              <div className="flex flex-col gap-2">
-                <Button asChild variant="outline" className="w-full">
-                  <Link href="/staff/results/new">Upload Result</Link>
+              <Button asChild className="w-full bg-amber-400 hover:bg-amber-500 text-amber-900 font-bold h-12 rounded-xl border-none">
+                <Link href="/staff/daily-report" className="flex items-center justify-center gap-2">
+                  Open Daily Report <ArrowRight className="h-5 w-5" />
+                </Link>
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="relative p-6 pt-10 shadow-sm hover:shadow-md transition-shadow">
+            <div className="absolute top-6 left-6 rounded-full bg-purple-100 p-3">
+              <GraduationCap className="h-6 w-6 text-purple-600" />
+            </div>
+            <div className="absolute top-10 right-10 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
+              0
+            </div>
+            <CardHeader className="px-0 pt-8">
+              <CardTitle className="text-2xl font-bold text-slate-800">Results</CardTitle>
+            </CardHeader>
+            <CardContent className="px-0 pb-8">
+              <p className="text-slate-500 font-medium leading-relaxed">
+                Upload and view academic results for your class. Track progress and performance metrics.
+              </p>
+            </CardContent>
+            <div className="pt-4 border-t border-slate-100">
+              <div className="flex gap-4 mt-2">
+                <Button asChild className="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-bold h-12 rounded-xl border-none">
+                  <Link href="/staff/results/new" className="flex items-center justify-center gap-2">
+                    <LogOut className="h-4 w-4 rotate-90" /> Upload Result
+                  </Link>
                 </Button>
-                <Button asChild variant="outline" className="w-full">
-                  <Link href="/staff/results">View All Results</Link>
+                <Button asChild variant="outline" className="flex-1 border-slate-200 text-slate-600 font-bold h-12 rounded-xl">
+                  <Link href="/staff/results" className="flex items-center justify-center gap-2">
+                    <Check className="h-4 w-4" /> View All
+                  </Link>
                 </Button>
               </div>
+            </div>
+          </Card>
+
+          <Card className="relative p-6 pt-10 shadow-sm hover:shadow-md transition-shadow">
+            <div className="absolute top-6 left-6 rounded-full bg-orange-100 p-3">
+              <Users className="h-6 w-6 text-orange-600" />
+            </div>
+            <div className="absolute top-10 right-10 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
+              {classPupils.length}
+            </div>
+            <CardHeader className="px-0 pt-8">
+              <CardTitle className="text-2xl font-bold text-slate-800">Pupils</CardTitle>
+            </CardHeader>
+            <CardContent className="px-0 pb-8">
+              <p className="text-slate-500 font-medium leading-relaxed">
+                View detailed profiles of pupils in your class. Access contact info and history.
+              </p>
             </CardContent>
+            <div className="pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-sm font-semibold text-slate-700">Total pupils enrolled</span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
+                  {classPupils.length}
+                </span>
+              </div>
+              <Button asChild className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold h-12 rounded-xl border-none">
+                <Link href="/staff/pupils" className="flex items-center justify-center gap-2">
+                  View Pupils <ArrowRight className="h-5 w-5" />
+                </Link>
+              </Button>
+            </div>
           </Card>
         </div>
       </main>

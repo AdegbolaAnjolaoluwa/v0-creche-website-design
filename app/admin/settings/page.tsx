@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Bell, ChevronDown, Lock, Save, User } from "lucide-react"
+import { Bell, BookOpen, Calendar, ChevronDown, Home, Lock, Save, User, Users, ShieldCheck } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,16 +21,68 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { classesData } from "@/lib/data"
+
+const STAFF_ASSIGNMENTS_KEY = "staffClassAssignments"
+
+type StaffAssignment = {
+  name: string
+  email: string
+}
+
+const currentYear = new Date().getFullYear()
+// Show 2 years back and 5 years forward for a manageable dynamic list
+const academicYears = Array.from({ length: 8 }, (_, i) => {
+  const startYear = currentYear - 2 + i
+  return `${startYear}-${startYear + 1}`
+})
 
 export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false)
+  const [staffAssignments, setStaffAssignments] = useState<Record<string, StaffAssignment>>(() => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem(STAFF_ASSIGNMENTS_KEY)
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored)
+          // Migration: if it's still old string format, map it
+          const migrated: Record<string, StaffAssignment> = {}
+          Object.keys(parsed).forEach(key => {
+            if (typeof parsed[key] === 'string') {
+              migrated[key] = { name: "", email: parsed[key] }
+            } else {
+              migrated[key] = parsed[key]
+            }
+          })
+          return migrated
+        } catch {
+          return {}
+        }
+      }
+    }
+    return {}
+  })
 
   const handleSave = () => {
     setIsLoading(true)
+    // Save staff assignments to localStorage
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(STAFF_ASSIGNMENTS_KEY, JSON.stringify(staffAssignments))
+    }
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false)
     }, 1500)
+  }
+
+  const handleStaffChange = (classId: string, field: keyof StaffAssignment, value: string) => {
+    setStaffAssignments(prev => ({
+      ...prev,
+      [classId]: {
+        ...(prev[classId] || { name: "", email: "" }),
+        [field]: value
+      }
+    }))
   }
 
   return (
@@ -60,11 +112,16 @@ export default function SettingsPage() {
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem className="bg-muted">Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <Link href="/">
-              <DropdownMenuItem>Log out</DropdownMenuItem>
-            </Link>
+            <DropdownMenuItem onClick={() => {
+              if (typeof window !== "undefined") {
+                window.localStorage.removeItem("currentUser")
+              }
+              window.location.href = "/login?type=admin"
+            }}>
+              Log out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
@@ -108,33 +165,34 @@ export default function SettingsPage() {
                 strokeLinejoin="round"
                 className="h-4 w-4"
               >
-                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                 <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" x2="8" y1="13" y2="13"></line>
+                <line x1="16" x2="8" y1="17" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
               </svg>
               Results
             </Link>
             <Link
-              href="/admin/students"
+              href="/admin/attendance"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
-              Students
+              <Calendar className="h-4 w-4" />
+              Attendance
+            </Link>
+            <Link
+              href="/admin/daily-reports"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+            >
+              <BookOpen className="h-4 w-4" />
+              Daily Reports
+            </Link>
+            <Link
+              href="/admin/pupils"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+            >
+              <Users className="h-4 w-4" />
+              Pupils
             </Link>
             <Link
               href="/admin/classes"
@@ -172,10 +230,17 @@ export default function SettingsPage() {
                 strokeLinejoin="round"
                 className="h-4 w-4"
               >
-                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
               </svg>
               Settings
+            </Link>
+            <Link
+              href="/admin/leave"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+            >
+              <Calendar className="h-4 w-4" />
+              Staff Leave
             </Link>
           </nav>
         </aside>
@@ -188,8 +253,8 @@ export default function SettingsPage() {
           <Tabs defaultValue="general" className="space-y-4">
             <TabsList>
               <TabsTrigger value="general">General</TabsTrigger>
+              <TabsTrigger value="staff">Staff Assignment</TabsTrigger>
               <TabsTrigger value="security">Security</TabsTrigger>
-              <TabsTrigger value="notifications">Notifications</TabsTrigger>
               <TabsTrigger value="grading">Grading System</TabsTrigger>
             </TabsList>
             <TabsContent value="general" className="space-y-4">
@@ -247,14 +312,16 @@ export default function SettingsPage() {
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="academic-year">Current Academic Year</Label>
-                      <Select defaultValue="2023-2024">
+                      <Select defaultValue={`${currentYear}-${currentYear + 1}`}>
                         <SelectTrigger id="academic-year">
                           <SelectValue placeholder="Select academic year" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="2022-2023">2022-2023</SelectItem>
-                          <SelectItem value="2023-2024">2023-2024</SelectItem>
-                          <SelectItem value="2024-2025">2024-2025</SelectItem>
+                          {academicYears.map((year) => (
+                            <SelectItem key={year} value={year}>
+                              {year}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -283,6 +350,47 @@ export default function SettingsPage() {
                         Save Changes
                       </>
                     )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+            <TabsContent value="staff" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Staff Assignments</CardTitle>
+                  <CardDescription>Assign a teacher to each class by their school email</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {classesData.map((cls) => (
+                    <div key={cls.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center border-b pb-6 last:border-0 last:pb-0">
+                      <div className="md:col-span-3">
+                        <Label className="text-sm font-semibold text-slate-700">{cls.name}</Label>
+                        <p className="text-xs text-muted-foreground">{cls.ageRange}</p>
+                      </div>
+                      <div className="md:col-span-4 relative">
+                        <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          placeholder="Teacher Name" 
+                          className="pl-10"
+                          value={staffAssignments[cls.id]?.name || ""}
+                          onChange={(e) => handleStaffChange(cls.id, "name", e.target.value)}
+                        />
+                      </div>
+                      <div className="md:col-span-5 relative">
+                        <Bell className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          placeholder="teacher@bayhood.com" 
+                          className="pl-10"
+                          value={staffAssignments[cls.id]?.email || ""}
+                          onChange={(e) => handleStaffChange(cls.id, "email", e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+                <CardFooter className="flex justify-end">
+                  <Button onClick={handleSave} disabled={isLoading}>
+                    {isLoading ? "Saving..." : "Save Assignments"}
                   </Button>
                 </CardFooter>
               </Card>
@@ -342,90 +450,11 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-            <TabsContent value="notifications" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Notification Preferences</CardTitle>
-                  <CardDescription>Configure how you receive notifications</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Bell className="h-4 w-4 text-muted-foreground" />
-                        <Label htmlFor="new-result">New Result Uploads</Label>
-                      </div>
-                      <Switch id="new-result" defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Bell className="h-4 w-4 text-muted-foreground" />
-                        <Label htmlFor="new-student">New Student Enrollments</Label>
-                      </div>
-                      <Switch id="new-student" defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Bell className="h-4 w-4 text-muted-foreground" />
-                        <Label htmlFor="system-updates">System Updates</Label>
-                      </div>
-                      <Switch id="system-updates" />
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="flex justify-end">
-                  <Button onClick={handleSave} disabled={isLoading}>
-                    {isLoading ? (
-                      <>Saving...</>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Preferences
-                      </>
-                    )}
-                  </Button>
-                </CardFooter>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Email Notifications</CardTitle>
-                  <CardDescription>Configure email notification settings</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="email-results" defaultChecked />
-                      <Label htmlFor="email-results">Send email notifications for new results</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="email-summary" defaultChecked />
-                      <Label htmlFor="email-summary">Send weekly summary emails</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="email-marketing" />
-                      <Label htmlFor="email-marketing">Receive marketing and promotional emails</Label>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="flex justify-end">
-                  <Button onClick={handleSave} disabled={isLoading}>
-                    {isLoading ? (
-                      <>Saving...</>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Preferences
-                      </>
-                    )}
-                  </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
             <TabsContent value="grading" className="space-y-4">
               <Card>
                 <CardHeader>
                   <CardTitle>Grading System</CardTitle>
-                  <CardDescription>Configure the grading system for student assessments</CardDescription>
+                  <CardDescription>Configure the grading system for pupil assessments</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">

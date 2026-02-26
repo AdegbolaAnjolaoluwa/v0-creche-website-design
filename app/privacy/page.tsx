@@ -67,9 +67,9 @@ export default function PrivacyPage() {
                 </p>
               </div>
               <div>
-                <h2 className="text-base font-semibold text-foreground mb-2">3. Parent and Student Data</h2>
+                <h2 className="text-base font-semibold text-foreground mb-2">3. Parent and Pupil Data</h2>
                 <p>
-                  Access to student information through the portal is restricted to authorised users. We take reasonable
+                  Access to pupil information through the portal is restricted to authorised users. We take reasonable
                   steps to protect this data and limit access to staff and parents who need it for educational purposes.
                 </p>
               </div>

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { BarChart3, BookOpen, ChevronDown, Home, LogOut, Menu, User, Users } from "lucide-react"
+import { ArrowLeft, BarChart3, BookOpen, ChevronDown, Home, LogOut, Menu, User, Users } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { classesData } from "@/app/admin/classes/page"
+import { classesData } from "@/lib/data"
 
 type CurrentUser = {
   role: string
@@ -248,7 +248,15 @@ export default function MyAttendancePage() {
       </header>
       <main className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-8">
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">My Attendance</h1>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" asChild>
+              <Link href="/staff/dashboard">
+                <ArrowLeft className="h-4 w-4" />
+                <span className="sr-only">Back</span>
+              </Link>
+            </Button>
+            <h1 className="text-2xl font-bold tracking-tight">My Attendance</h1>
+          </div>
           <p className="text-muted-foreground">
             Record and review your daily sign-ins. Today is {today}.
           </p>

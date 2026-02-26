@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ChevronDown, FileText, Filter, Search, User } from "lucide-react"
+import { ArrowLeft, ChevronDown, FileText, Filter, Search, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,8 +20,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
-import { classesData } from "@/app/admin/classes/page"
-import { resultsData, type ResultRecord } from "@/app/admin/results/page"
+import { classesData, resultsData, type ResultRecord } from "@/lib/data"
 
 type CurrentUser = {
   role: string
@@ -39,11 +38,17 @@ const loadResultsFromStorage = (): ResultRecord[] => {
     return resultsData
   }
   try {
-    const parsed = JSON.parse(stored) as ResultRecord[]
+    const parsed = JSON.parse(stored)
     if (!Array.isArray(parsed)) {
       return resultsData
     }
-    return parsed
+    // Migration: ensure old studentName/studentId keys are mapped to pupilName/pupilId
+    const migrated = parsed.map((item: any) => ({
+      ...item,
+      pupilId: item.pupilId || item.studentId || "",
+      pupilName: item.pupilName || item.studentName || "",
+    }))
+    return migrated as ResultRecord[]
   } catch {
     return resultsData
   }
@@ -87,11 +92,13 @@ export default function StaffResultsPage() {
   const filteredResults = useMemo(() => {
     if (!assignedClassName) return []
     return results.filter((result) => {
+      if (!result) return false
       if (result.class !== assignedClassName) return false
 
+      const term = (searchTerm || "").toLowerCase()
       const matchesSearch =
-        result.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        result.studentId.toLowerCase().includes(searchTerm.toLowerCase())
+        (result.pupilName || "").toLowerCase().includes(term) ||
+        (result.pupilId || "").toLowerCase().includes(term)
 
       const matchesTerm = selectedTerm === "all" || result.term === selectedTerm
       const matchesStatus = selectedStatus === "all" || result.status === selectedStatus
@@ -142,7 +149,15 @@ export default function StaffResultsPage() {
       <main className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-8">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8">
           <div className="grid gap-1">
-            <h1 className="text-2xl font-bold tracking-tight">Class Results</h1>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" asChild>
+                <Link href="/staff/dashboard">
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="sr-only">Back</span>
+                </Link>
+              </Button>
+              <h1 className="text-2xl font-bold tracking-tight">Class Results</h1>
+            </div>
             <p className="text-muted-foreground">
               View results for your assigned class{assignedClassName ? ` (${assignedClassName})` : ""}.
             </p>
@@ -199,8 +214,8 @@ export default function StaffResultsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Student ID</TableHead>
-                    <TableHead>Student Name</TableHead>
+                    <TableHead>Pupil ID</TableHead>
+                    <TableHead>Pupil Name</TableHead>
                     <TableHead>Class</TableHead>
                     <TableHead>Term</TableHead>
                     <TableHead className="text-center">Average</TableHead>
@@ -213,8 +228,8 @@ export default function StaffResultsPage() {
                   {filteredResults.length > 0 ? (
                     filteredResults.map((result) => (
                       <TableRow key={result.id}>
-                        <TableCell className="font-medium">{result.studentId}</TableCell>
-                        <TableCell>{result.studentName}</TableCell>
+                        <TableCell className="font-medium">{result.pupilId}</TableCell>
+                        <TableCell>{result.pupilName}</TableCell>
                         <TableCell>{result.class}</TableCell>
                         <TableCell>{result.term}</TableCell>
                         <TableCell className="text-center">

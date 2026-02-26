@@ -1,7 +1,8 @@
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 
-import { BookOpen, ChevronDown, User, Users } from "lucide-react"
+import { BookOpen, Calendar, ChevronDown, User, Users } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,7 +23,7 @@ const classesData = [
       "For children aged 3 months to 2 years. Focused on nurturing care, sensory play, and early development milestones.",
     ageRange: "3 months - 2 years",
     teacherName: "Alexander Anwangbasi Joy",
-    studentCount: 18,
+    pupilCount: 18,
     subjects: ["Motor Skills", "Social Interaction", "Basic Recognition", "Sensory Development"],
   },
   {
@@ -32,7 +33,7 @@ const classesData = [
       "For children aged 2-3 years. Introducing structured learning through play, basic concepts, and social skills.",
     ageRange: "2-3 years",
     teacherName: "Adegoke Oluwatosin Elizabeth",
-    studentCount: 28,
+    pupilCount: 28,
     subjects: ["Alphabets", "Numbers", "Coloring", "Rhymes", "Basic Writing", "Social Skills"],
   },
   {
@@ -42,7 +43,7 @@ const classesData = [
       "For children aged 3-4 years. Building pre-academic foundations, language development, and creative expression.",
     ageRange: "3-4 years",
     teacherName: "Teniola Fetinoluwa Christiana",
-    studentCount: 32,
+    pupilCount: 32,
     subjects: [
       "Reading",
       "Writing",
@@ -61,7 +62,7 @@ const classesData = [
       "An introductory program that helps children adjust to school routines through guided play and social interaction.",
     ageRange: "18 months - 3 years",
     teacherName: "Fagade Samuel",
-    studentCount: 16,
+    pupilCount: 16,
     subjects: ["Free Play", "Circle Time", "Music & Movement", "Outdoor Play"],
   },
   {
@@ -71,7 +72,7 @@ const classesData = [
       "For children progressing from playgroup. Focused on language development, number sense, and social confidence.",
     ageRange: "3-4 years",
     teacherName: "Akinnade Oluwafemi",
-    studentCount: 20,
+    pupilCount: 20,
     subjects: ["Pre-reading", "Pre-writing", "Numbers", "Practical Life", "Rhymes", "Story Time"],
   },
   {
@@ -81,7 +82,7 @@ const classesData = [
       "For children preparing to enter Nursery 1. Reinforces pre-academic skills, independence, and classroom routines.",
     ageRange: "4-5 years",
     teacherName: "Damisa Yetunde Halimat",
-    studentCount: 22,
+    pupilCount: 22,
     subjects: ["Reading Readiness", "Writing Readiness", "Mathematics Concepts", "Science Exploration", "Art & Music"],
   },
 ]
@@ -94,6 +95,24 @@ type ClassDetailPageProps = {
 
 export default function ClassDetailPage({ params }: ClassDetailPageProps) {
   const classItem = classesData.find((item) => item.id === params.id)
+  const [assignedTeacher, setAssignedTeacher] = useState<{ name: string, email: string } | null>(null)
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem("staffClassAssignments")
+      if (stored && classItem) {
+        const assignments = JSON.parse(stored)
+        if (assignments[classItem.id]) {
+          const assignment = assignments[classItem.id]
+          if (typeof assignment === 'string') {
+            setAssignedTeacher({ name: "", email: assignment })
+          } else {
+            setAssignedTeacher(assignment)
+          }
+        }
+      }
+    }
+  }, [classItem])
 
   if (!classItem) {
     return (
@@ -209,18 +228,49 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
               Results
             </Link>
             <Link
-              href="/admin/students"
+              href="/admin/pupils"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
             >
               <Users className="h-4 w-4" />
-              Students
+              Pupils
             </Link>
             <Link
               href="/admin/classes"
               className="flex items-center gap-3 rounded-lg bg-primary px-3 py-2 text-primary-foreground transition-all hover:text-primary-foreground"
             >
-              <BookOpen className="h-4 w-4" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+              >
+                <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H19"></path>
+                <path d="M20 8c0-1.1-.9-2-2-2h-5"></path>
+                <path d="M4 4v16"></path>
+                <path d="M8 4h9"></path>
+                <path d="M9 8h6"></path>
+              </svg>
               Classes
+            </Link>
+            <Link
+              href="/admin/attendance"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+            >
+              <Calendar className="h-4 w-4" />
+              Attendance
+            </Link>
+            <Link
+              href="/admin/daily-reports"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+            >
+              <BookOpen className="h-4 w-4" />
+              Daily Reports
             </Link>
             <Link
               href="/admin/settings"
@@ -256,7 +306,7 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
                 <Link href="/admin/classes">Back to Classes</Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link href={`/admin/students?class=${encodeURIComponent(classItem.name)}`}>View Students</Link>
+                <Link href={`/admin/pupils?class=${encodeURIComponent(classItem.name)}`}>View Pupils</Link>
               </Button>
             </div>
           </div>
@@ -272,11 +322,20 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
               </div>
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-muted-foreground" />
-                <p className="text-sm">{classItem.teacherName}</p>
+                <div className="text-sm">
+                  {assignedTeacher ? (
+                    <div className="flex flex-col">
+                      <span className="font-medium text-slate-900">{assignedTeacher.name || "Unnamed Teacher"}</span>
+                      <span className="text-xs text-muted-foreground">{assignedTeacher.email}</span>
+                    </div>
+                  ) : (
+                    <p>{classItem.teacherName}</p>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
-                <p className="text-sm">{classItem.studentCount} students enrolled</p>
+                <p className="text-sm">{classItem.pupilCount} pupils enrolled</p>
               </div>
               <div>
                 <p className="text-sm font-medium mb-2">Subjects</p>
