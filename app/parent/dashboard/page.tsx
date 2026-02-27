@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useUser, useOrganization } from "@clerk/nextjs"
 import { BarChart3, BookOpen, ChevronDown, Download, FileText, Home, LogOut, Menu, Settings, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -94,6 +95,16 @@ const pupilData = {
 
 export default function ParentDashboard() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
+  const { user } = useUser()
+  const { organization, membership } = useOrganization()
+
+  // Retrieve studentId from organization membership public metadata
+  const studentId = membership?.publicMetadata?.studentId as string | undefined;
+
+  // In a real application, you would use this 'studentId' to fetch the specific child's data
+  // from your database instead of using the hardcoded 'pupilData'.
+  // Example: 
+  // const { data: pupilData } = useQuery(['pupil', studentId], () => fetchPupil(studentId));
 
   // Calculate average score
   const averageScore = pupilData.results.reduce((acc, result) => acc + result.total, 0) / pupilData.results.length

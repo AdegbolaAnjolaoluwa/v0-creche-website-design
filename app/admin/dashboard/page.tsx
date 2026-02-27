@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { Protect, SignOutButton } from "@clerk/nextjs"
 import {
   BarChart3,
   BookOpen,
@@ -502,14 +503,13 @@ export default function AdminDashboard() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => {
-              if (typeof window !== "undefined") {
-                window.localStorage.removeItem("currentUser")
-              }
-              window.location.href = "/login?type=admin"
-            }}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
+            <DropdownMenuItem>
+              <SignOutButton>
+                <div className="flex items-center w-full cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </div>
+              </SignOutButton>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -584,6 +584,14 @@ export default function AdminDashboard() {
               </p>
             </div>
             <div className="flex-1" />
+            <Protect>
+              <Button asChild>
+                <Link href="/admin/results/new" className="flex items-center">
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span>Enter New Result</span>
+                </Link>
+              </Button>
+            </Protect>
           </div>
           <Tabs defaultValue="overview" className="space-y-4">
             <TabsList>

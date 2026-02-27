@@ -117,7 +117,7 @@ export default function PupilsPage() {
   }
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const newId = `LL-${new Date().getFullYear()}-${String(pupils.length + 1).padStart(3, "0")}`
     const newRecord: Pupil = {
@@ -141,7 +141,7 @@ export default function PupilsPage() {
     })
   }
 
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!editingPupilId) return
     setPupils((prev) =>

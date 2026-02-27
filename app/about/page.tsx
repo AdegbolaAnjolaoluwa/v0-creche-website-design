@@ -77,7 +77,7 @@ export default function AboutPage() {
               </div>
               <div className="rounded-lg overflow-hidden">
                 <img
-                  src="/placeholder.svg?height=400&width=600"
+                  src="/placeholder.svg"
                   alt="Children playing and learning in a classroom"
                   className="w-full h-auto object-cover"
                 />
@@ -213,7 +213,7 @@ export default function AboutPage() {
             <div className="grid gap-10 lg:grid-cols-2 lg:gap-16 items-center">
               <div className="rounded-lg overflow-hidden">
                 <img
-                  src="/placeholder.svg?height=400&width=600"
+                  src="/placeholder.svg"
                   alt="Our facilities with playground and classrooms"
                   className="w-full h-auto object-cover"
                 />

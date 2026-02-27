@@ -503,28 +503,18 @@ export const resultsData: ResultRecord[] = [
   },
 ]
 
-export const calculateAttendanceScore = (totalDays: number, presentDays: number): number => {
-    if (totalDays === 0) return 0
-    // Simple 5% of total score calculation example, or based on percentage
-    const percentage = (presentDays / totalDays) * 100
-    // Map percentage to a score out of 5 (example policy)
-    return Math.round((percentage / 100) * 5)
+export const calculateAttendanceScore = (attendancePercentage: number): number => {
+    // Attendance score out of 5 based on percentage
+    return Math.round((attendancePercentage / 100) * 5)
 }
 
-export const calculateFinalScore = (scores: Record<string, { midterm: string; exam: string }>, attendanceScore: number): number => {
-    let totalScore = 0
-    let subjectCount = 0
+export const calculateFinalScore = (academicAverage: number, attendanceScore: number): number => {
+    // Final score = Academic Average (e.g., out of 100) + Attendance Score (e.g., out of 5)
+    // Or weighted average? For now, let's assume it's additive or weighted
+    // If academic is 95% and attendance is 5/5, total could be 100
+    // But usually academic is max 95? 
+    // Let's assume academic is 100% and we add bonus? Or academic is scaled?
     
-    Object.values(scores).forEach(score => {
-        const mid = parseFloat(score.midterm) || 0
-        const exam = parseFloat(score.exam) || 0
-        totalScore += (mid + exam)
-        subjectCount++
-    })
-    
-    if (subjectCount === 0) return 0
-    
-    // Example: Average + Attendance
-    const academicAverage = totalScore / subjectCount
-    return Math.round(academicAverage + attendanceScore) // This logic might need adjustment based on school policy
+    // Simple implementation based on existing usage in edit page:
+    return academicAverage + attendanceScore
 }

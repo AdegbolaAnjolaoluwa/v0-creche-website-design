@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { BookOpen, ChevronDown, Download, FileText, Filter, Plus, Search, Trash, User, Users, Edit } from "lucide-react"
+import { BookOpen, ChevronDown, Download, FileText, Filter, Search, User, Users, Edit } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -73,7 +73,9 @@ export default function ResultsPage() {
   const [selectedClass, setSelectedClass] = useState("all")
   const [selectedTerm, setSelectedTerm] = useState("all")
   const [selectedStatus, setSelectedStatus] = useState("all")
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [resultToDelete, setResultToDelete] = useState<{ id: string; pupilName: string } | null>(null)
 
   // Filter results based on search and filters
@@ -93,10 +95,10 @@ export default function ResultsPage() {
     return matchesSearch && matchesClass && matchesTerm && matchesStatus
   })
 
-  const handleDeleteClick = (result: ResultRecord) => {
-    setResultToDelete({ id: result.id, pupilName: result.pupilName })
-    setIsDeleteOpen(true)
-  }
+  // const handleDeleteClick = (result: ResultRecord) => {
+  //   setResultToDelete({ id: result.id, pupilName: result.pupilName })
+  //   setIsDeleteOpen(true)
+  // }
 
   const handleConfirmDelete = () => {
     if (!resultToDelete) return
