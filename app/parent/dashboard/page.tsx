@@ -5,6 +5,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { useUser, useOrganization } from "@clerk/nextjs"
 import { BarChart3, BookOpen, ChevronDown, Download, FileText, Home, LogOut, Menu, Settings, User } from "lucide-react"
+import { useClerk } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -94,6 +96,8 @@ const pupilData = {
 }
 
 export default function ParentDashboard() {
+  const router = useRouter();
+  const { signOut } = useClerk();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
   const { user } = useUser()
   const { organization, membership } = useOrganization()
@@ -204,12 +208,10 @@ export default function ParentDashboard() {
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <Link href="/">
-              <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { signOut(() => { router.push("/login") }) }}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
-            </Link>
           </DropdownMenuContent>
         </DropdownMenu>
       </header>

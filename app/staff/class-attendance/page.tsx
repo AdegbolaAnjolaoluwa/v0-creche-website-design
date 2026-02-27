@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useClerk } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, BookOpen, Check, ChevronDown, Home, LogOut, Menu, User, Users, X } from "lucide-react"
 
@@ -48,6 +49,7 @@ function formatTime(date: Date) {
 }
 
 export default function ClassAttendancePage() {
+  const { signOut } = useClerk();
   const router = useRouter()
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
@@ -160,12 +162,7 @@ export default function ClassAttendancePage() {
     setIsSavingAttendance(false)
   }
 
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem("currentUser")
-    }
-    router.push("/login?type=staff")
-  }
+  const handleLogout = () => { signOut(() => { router.push("/login") }) }
 
   return (
     <div className="flex min-h-screen flex-col">

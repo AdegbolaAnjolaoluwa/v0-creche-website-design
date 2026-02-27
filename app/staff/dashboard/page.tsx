@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useClerk } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { ArrowRight, BarChart3, BookOpen, Check, ChevronDown, GraduationCap, Home, LogOut, Menu, User, Users, X, Calendar } from "lucide-react"
 
@@ -87,6 +88,7 @@ function isAfterSignInCutoff() {
 }
 
 export default function StaffDashboard() {
+  const { signOut } = useClerk();
   const router = useRouter()
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
@@ -349,12 +351,7 @@ export default function StaffDashboard() {
     setIsSavingReport(false)
   }
 
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem("currentUser")
-    }
-    router.push("/login?type=staff")
-  }
+  const handleLogout = () => { signOut(() => { router.push("/login") }) }
 
   const pendingLeaveCount = useMemo(() => {
     if (!currentUser) return 0

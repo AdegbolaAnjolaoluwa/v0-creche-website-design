@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useClerk } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { BookOpen, Calendar, ChevronDown, Edit, Filter, Home, Trash, User, Users } from "lucide-react"
 
@@ -64,6 +65,7 @@ const PUPIL_ATTENDANCE_KEY = "pupilAttendance"
 const DAILY_REPORTS_KEY = "dailyReports"
 
 export default function AdminAttendancePage() {
+  const { signOut } = useClerk();
   const router = useRouter()
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
   const [staffAttendance, setStaffAttendance] = useState<StaffAttendanceRecord[]>([])
@@ -187,12 +189,7 @@ export default function AdminAttendancePage() {
     }
   }
 
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem("currentUser")
-    }
-    router.push("/login?type=admin")
-  }
+  const handleLogout = () => { signOut(() => { router.push("/login") }) }
 
   const today = new Date().toISOString().slice(0, 10)
 

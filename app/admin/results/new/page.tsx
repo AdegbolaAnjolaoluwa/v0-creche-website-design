@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useClerk } from "@clerk/nextjs"
 import Image from "next/image"
 import { useRouter, usePathname } from "next/navigation"
 import { ArrowLeft, ChevronDown, LogOut, Save, User } from "lucide-react"
@@ -56,6 +57,7 @@ type PupilAttendanceRecord = {
 const PUPIL_ATTENDANCE_KEY = "pupilAttendance"
 
 export default function NewResult() {
+  const { signOut } = useClerk();
   const router = useRouter()
   const pathname = usePathname()
   const [isLoading, setIsLoading] = useState(false)
@@ -72,12 +74,7 @@ export default function NewResult() {
 
   const RESULTS_STORAGE_KEY = "adminResults"
 
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem("currentUser")
-    }
-    router.push("/login?type=staff")
-  }
+  const handleLogout = () => { signOut(() => { router.push("/login") }) }
 
   useEffect(() => {
     if (typeof window === "undefined") return

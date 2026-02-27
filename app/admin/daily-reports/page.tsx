@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useClerk } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { BookOpen, Calendar, ChevronDown, Eye, Filter, Home, LogOut, Menu, Search, User, Users } from "lucide-react"
 
@@ -56,6 +57,7 @@ type DailyReport = {
 const DAILY_REPORTS_KEY = "dailyReports"
 
 export default function AdminDailyReportsPage() {
+  const { signOut } = useClerk();
   const router = useRouter()
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
   const [dailyReports, setDailyReports] = useState<DailyReport[]>([])
@@ -129,12 +131,7 @@ export default function AdminDailyReportsPage() {
     window.localStorage.setItem(DAILY_REPORTS_KEY, JSON.stringify(updated))
   }
 
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem("currentUser")
-    }
-    router.push("/login?type=admin")
-  }
+  const handleLogout = () => { signOut(() => { router.push("/login") }) }
 
   return (
     <div className="flex min-h-screen flex-col">

@@ -22,7 +22,7 @@ export default function SignUpPage() {
   const router = useRouter()
   
   useEffect(() => {
-    if (isSignedIn && user) {
+    if (isSignedIn && user && isLoaded) {
         // Already signed in, redirect
         const role = (user.publicMetadata as any)?.role
         const email = user.primaryEmailAddress?.emailAddress || ""
@@ -34,7 +34,18 @@ export default function SignUpPage() {
            router.replace("/parent/dashboard")
        }
     }
-  }, [isSignedIn, user, router])
+  }, [isSignedIn, user, router, isLoaded])
+
+  if (isSignedIn || (isLoaded && isSignedIn)) {
+      return (
+          <div className="flex items-center justify-center min-h-screen bg-gray-50">
+              <div className="text-center">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary mb-4" />
+                  <p className="text-muted-foreground">Redirecting to dashboard...</p>
+              </div>
+          </div>
+      )
+  }
   
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -70,14 +81,15 @@ export default function SignUpPage() {
       const errors = err.errors || []
       const errorMsg = errors[0]?.longMessage || errors[0]?.message || ""
       
-      if (errorMsg.includes("already exists") || errorMsg.includes("form_identifier_exists")) {
-          // If user exists, maybe they need to activate (set password)?
-          // We can try to initiate a "Forgot Password" flow or "Sign In with Code" flow here?
-          // Since we pre-created them with NO password, we should try to sign them in with Email Code
-          // and then let them set a password.
-          
+      if (errorMsg.includes("already signed in") || errorMsg.includes("session")) {
+          // If already signed in, we should redirect
+          router.replace("/admin/dashboard") // default, others handled by useEffect
+      } else if (errorMsg.includes("already exists") || errorMsg.includes("form_identifier_exists") || errorMsg.includes("That email address is taken")) {
+          // If user exists, try to switch to sign-in mode (passwordless via email code)
           try {
+              // Attempt to initiate sign-in flow
               const si = await signIn.create({ identifier: email })
+              
               if (si.status === "needs_first_factor") {
                    const factors = si.supportedFirstFactors as any[] || [];
                    const emailFactor = factors.find((f: any) => f.strategy === "email_code");
@@ -86,17 +98,27 @@ export default function SignUpPage() {
                         await signIn.prepareFirstFactor({ strategy: "email_code", emailAddressId: emailFactor.emailAddressId })
                         setPendingVerification(true)
                         setMode("activate")
-                        setError("") // Clear the "already exists" error
+                        setError("") 
+                        // Inform user what's happening
+                        alert("Account found! We sent a verification code to your email to log you in.")
                    } else {
-                        setError("Please verify your account via the link in your email or log in.")
+                        // Maybe only password is enabled?
+                        setError("Account exists. Please log in with your password.")
+                        setTimeout(() => router.push("/login"), 2000)
                    }
+               } else if (si.status === "complete") {
+                  // Already logged in? weird but handle it
+                  await setActive({ session: si.createdSessionId })
+                  router.push("/admin/dashboard") // default redirect
                } else {
-                  // Maybe they have a password already?
                   setError("This account already exists. Please log in.")
+                  setTimeout(() => router.push("/login"), 2000)
               }
            } catch (siErr: any) {
                console.error("Sign In Create Error:", siErr)
-               setError("This account already exists. Please log in.")
+               // Fallback: If sign-in create fails (e.g. rate limit or other), just tell them to login
+               setError("Account already exists. Redirecting to login...")
+               setTimeout(() => router.push("/login"), 1500)
            }
       } else {
           setError(errorMsg || "Something went wrong during sign up.")

@@ -51,25 +51,33 @@ export async function POST(req: Request) {
   // For this guide, you simply log the payload to the console
   const { id } = evt.data;
   const eventType = evt.type;
-  
+
   console.log(`Webhook with and ID of ${id} and type of ${eventType}`)
   console.log('Webhook body:', body)
 
   if (eventType === 'user.created') {
-    // This is where you would save the user to your database
-    // const { id, email_addresses, first_name, last_name, ... } = evt.data;
-    
-    // Example:
-    // await db.user.create({
-    //   data: {
-    //     clerkId: id,
-    //     email: email_addresses[0].email_address,
-    //     firstName: first_name,
-    //     lastName: last_name,
-    //     role: 'pending' // You can set a default role here
-    //   }
-    // })
-    
+    const { id, email_addresses } = evt.data;
+    // We safely grab the first email address and lowercase it
+    const email = email_addresses?.[0]?.email_address?.toLowerCase() || '';
+
+    let role = 'org:parent'; // Default
+    if (email.includes('admin') || email.includes('anjeesax') || email.includes('anjeeesax')) {
+      role = 'org:admin';
+    } else if (email.includes('staff')) {
+      role = 'org:staff';
+    }
+
+    try {
+      const { clerkClient } = await import('@clerk/nextjs/server');
+      const client = await clerkClient();
+      await client.users.updateUserMetadata(id, {
+        publicMetadata: { role }
+      });
+      console.log(`Assigned role ${role} to new user ${email}`);
+    } catch (error) {
+      console.error('Error assigning role to new user:', error);
+    }
+
     console.log('User created event processed');
   }
 

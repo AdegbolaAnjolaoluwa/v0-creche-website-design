@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useClerk } from "@clerk/nextjs"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Check, ChevronDown, Clock, Filter, Home, LogOut, Search, User, X } from "lucide-react"
@@ -52,6 +53,7 @@ type LeaveRequest = {
 const LEAVE_REQUESTS_KEY = "staffLeaveRequests"
 
 export default function AdminLeavePage() {
+  const { signOut } = useClerk();
   const router = useRouter()
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([])
@@ -133,12 +135,7 @@ export default function AdminLeavePage() {
     setActionType(null)
   }
 
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem("currentUser")
-    }
-    router.push("/login?type=admin")
-  }
+  const handleLogout = () => { signOut(() => { router.push("/login") }) }
 
   return (
     <div className="flex min-h-screen flex-col">
