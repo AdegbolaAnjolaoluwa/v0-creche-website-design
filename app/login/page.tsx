@@ -38,21 +38,44 @@ export default function LoginPage() {
        // Check Metadata Role
        const role = (user.publicMetadata as any)?.role
 
+       // Primary Redirect: Based on Metadata (Fastest, set during invite)
        if (role === 'org:admin' || email.toLowerCase().includes("admin") || email.toLowerCase().includes("anjeesax")) {
            router.replace("/admin/dashboard")
+           return;
        } else if (role === 'org:staff') {
            router.replace("/staff/dashboard")
+           return;
        } else if (role === 'org:parent') {
            router.replace("/parent/dashboard")
-       } else {
-           // Fallback to org membership logic if metadata is missing (legacy support)
-            if (isOrgLoaded && userMemberships.data && userMemberships.data.length > 0 && setOrgActive) {
+           return;
+       } 
+
+       // Secondary Redirect: Based on Organization Membership (Legacy/Fallback)
+       if (isOrgLoaded) {
+            if (userMemberships.data && userMemberships.data.length > 0 && setOrgActive) {
                 const adminMembership = userMemberships.data.find(m => m.role === 'org:admin')
                 const targetOrg = adminMembership ? adminMembership.organization : userMemberships.data[0].organization
-                setOrgActive({ organization: targetOrg.id }).then(() => {
-                    if (adminMembership) router.replace("/admin/dashboard")
-                    else router.replace("/staff/dashboard")
-                })
+                
+                // Try to activate org
+                setOrgActive({ organization: targetOrg.id })
+                    .then(() => {
+                        if (adminMembership) router.replace("/admin/dashboard")
+                        else router.replace("/staff/dashboard")
+                    })
+                    .catch((e) => {
+                         console.error("Failed to activate org", e)
+                         // Even if activation fails, try to send them to the dashboard
+                         if (adminMembership) router.replace("/admin/dashboard")
+                         else router.replace("/staff/dashboard")
+                    })
+            } else {
+                 // No organizations found.
+                 // Fallback based on email heuristic if metadata failed
+                 if (email.toLowerCase().includes("admin")) {
+                     router.replace("/admin/dashboard")
+                 } else {
+                     router.replace("/staff/dashboard")
+                 }
             }
        }
     }

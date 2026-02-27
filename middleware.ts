@@ -14,7 +14,7 @@ export default clerkMiddleware(async (auth, req) => {
   if (isAdminRoute(req)) {
       if (role !== 'org:admin') {
           // If not authenticated or not admin, redirect
-          if (!session.userId) return auth.redirectToSignIn()
+          if (!session.userId) return NextResponse.redirect(new URL('/login', req.url))
           return NextResponse.redirect(new URL('/login', req.url))
       }
   }
@@ -22,7 +22,7 @@ export default clerkMiddleware(async (auth, req) => {
   // Protect Staff routes
   if (isStaffRoute(req)) {
       if (role !== 'org:staff' && role !== 'org:admin') {
-          if (!session.userId) return auth.redirectToSignIn()
+          if (!session.userId) return NextResponse.redirect(new URL('/login', req.url))
           return NextResponse.redirect(new URL('/login', req.url))
       }
   }
@@ -30,7 +30,7 @@ export default clerkMiddleware(async (auth, req) => {
   // Protect Parent routes
   if (isParentRoute(req)) {
        if (role !== 'org:parent') {
-          if (!session.userId) return auth.redirectToSignIn()
+          if (!session.userId) return NextResponse.redirect(new URL('/login', req.url))
           return NextResponse.redirect(new URL('/login', req.url))
       }
   }
