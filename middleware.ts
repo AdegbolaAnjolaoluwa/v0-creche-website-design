@@ -7,13 +7,25 @@ const isParentRoute = createRouteMatcher(["/parent(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
   // Protect Admin routes
-  if (isAdminRoute(req)) await auth.protect({ role: 'org:admin' });
+  if (isAdminRoute(req)) {
+      await auth.protect((has) => {
+          return has({ role: 'org:admin' })
+      })
+  }
 
   // Protect Staff routes
-  if (isStaffRoute(req)) await auth.protect({ role: 'org:staff' });
+  if (isStaffRoute(req)) {
+      await auth.protect((has) => {
+          return has({ role: 'org:staff' }) || has({ role: 'org:admin' })
+      })
+  }
 
   // Protect Parent routes
-  if (isParentRoute(req)) await auth.protect({ role: 'org:parent' });
+  if (isParentRoute(req)) {
+       await auth.protect((has) => {
+          return has({ role: 'org:parent' })
+      })
+  }
 });
 
 export const config = {

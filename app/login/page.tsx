@@ -6,29 +6,62 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { AtSign, Lock, GraduationCap, Baby, Sprout, Rocket, User, ArrowRight, ArrowLeft } from "lucide-react"
+import { useSignIn, useUser, useOrganizationList } from "@clerk/nextjs"
+import { AtSign, Lock, GraduationCap, Baby, Sprout, Rocket, User, ArrowRight, ArrowLeft, Loader2, AlertCircle } from "lucide-react"
 import { Fredoka, Inter } from "next/font/google"
 import { classesData } from "@/lib/data"
+import { useToast } from "@/hooks/use-toast"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 const fredoka = Fredoka({ subsets: ["latin"], variable: "--font-fredoka" })
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
 export default function LoginPage() {
+  const { isLoaded, signIn, setActive } = useSignIn()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { toast } = useToast()
   const typeParam = searchParams.get("type")
+  
+  // Auto-redirect if already signed in
+  const { isSignedIn, user } = useUser()
+  const { isLoaded: isOrgLoaded, userMemberships, setActive: setOrgActive } = useOrganizationList({
+    userMemberships: {
+      infinite: true,
+    },
+  })
+
+  useEffect(() => {
+    if (isSignedIn && user && isOrgLoaded) {
+       const email = user.primaryEmailAddress?.emailAddress || ""
+       
+       if (userMemberships.data && userMemberships.data.length > 0 && setOrgActive) {
+           const firstOrg = userMemberships.data[0].organization
+           setOrgActive({ organization: firstOrg.id })
+       }
+
+       if (
+           email.toLowerCase().includes("admin") || 
+           email.toLowerCase().includes("anjeesax") 
+       ) {
+           router.push("/admin/dashboard")
+       } else {
+           router.push("/staff/dashboard")
+       }
+    }
+  }, [isSignedIn, user, router, isOrgLoaded, userMemberships, setOrgActive])
   
   // Login State: "selection", "staff", "parent"
   const [loginView, setLoginView] = useState<"selection" | "staff" | "parent">("selection")
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
   
   // Staff State
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [classId, setClassId] = useState("")
   
-  // Parent State
-  const [parentPupilId, setParentPupilId] = useState("")
+  // Parent State (Note: We are switching to Email for parents too as Invitations use Email)
+  const [parentEmail, setParentEmail] = useState("")
   const [parentPassword, setParentPassword] = useState("")
 
   useEffect(() => {
@@ -41,81 +74,77 @@ export default function LoginPage() {
     }
   }, [typeParam])
 
-  const handleEmailChange = (val: string) => {
-    setEmail(val)
-    if (typeof window !== "undefined") {
-      const stored = window.localStorage.getItem("staffClassAssignments")
-      if (stored) {
-        try {
-          const assignments = JSON.parse(stored) as Record<string, { name: string, email: string } | string>
-          const foundClassId = Object.keys(assignments).find(
-            key => {
-              const assignment = assignments[key]
-              const assignmentEmail = typeof assignment === 'string' ? assignment : assignment.email
-              return assignmentEmail.toLowerCase() === val.toLowerCase()
-            }
-          )
-          if (foundClassId) {
-            setClassId(foundClassId)
-          }
-        } catch (e) {
-          console.error("Error parsing assignments", e)
-        }
-      }
-    }
-  }
-
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!isLoaded) return
+
     setIsLoading(true)
+    setError("")
 
-    setTimeout(() => {
+    const identifier = (loginView === "staff" ? email : parentEmail).trim()
+    const pass = loginView === "staff" ? password : parentPassword
+
+    if (!identifier || !pass) {
+      setError("Please enter both email and password.")
       setIsLoading(false)
-      if (typeof window !== "undefined") {
-        if (loginView === "staff") {
-          // Determine role based on email for demo purposes
-          const isAdmin = email.toLowerCase() === "admin@bayhood.com"
-          
-          // Check for admin-defined staff assignments
-          let assignedClassId = isAdmin ? undefined : classId
-          if (!isAdmin && !classId) {
-             // Try to find again if not set
-             const storedAssignments = window.localStorage.getItem("staffClassAssignments")
-             if (storedAssignments) {
-                try {
-                  const assignments = JSON.parse(storedAssignments) as Record<string, { name: string, email: string } | string>
-                  const foundClassId = Object.keys(assignments).find(
-                    key => {
-                      const assignment = assignments[key]
-                      const assignmentEmail = typeof assignment === 'string' ? assignment : assignment.email
-                      return assignmentEmail.toLowerCase() === email.toLowerCase()
-                    }
-                  )
-                  if (foundClassId) assignedClassId = foundClassId
-                } catch {}
-             }
-          }
+      return
+    }
 
-          const currentUser = {
-            role: isAdmin ? ("admin" as const) : ("staff" as const),
-            email: email,
-            classId: assignedClassId,
-          }
-          window.localStorage.setItem("currentUser", JSON.stringify(currentUser))
-          router.push(isAdmin ? "/admin/dashboard" : "/staff/dashboard")
-          return
-        }
-        if (loginView === "parent") {
-          const currentUser = {
-            role: "parent" as const,
-            pupilId: parentPupilId,
-          }
-          window.localStorage.setItem("currentUser", JSON.stringify(currentUser))
-          router.push("/parent/dashboard")
-          return
+    try {
+      const result = await signIn.create({
+        identifier,
+        password: pass,
+      })
+
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId })
+        // Redirect logic is handled by Clerk or we can force it
+        // Check the role to decide where to go (optional, as middleware handles basic protection)
+        // But for better UX, let's redirect to the right dashboard
+        
+        // Wait a moment for session to propagate
+        setTimeout(() => {
+            if (loginView === "staff") {
+                 // Check if it's an admin (this is a client-side hint, middleware is the real guard)
+                 if (identifier.toLowerCase().includes("admin") || identifier.toLowerCase() === "anjeesax@gmail.com") {
+                     router.push("/admin/dashboard")
+                 } else {
+                     router.push("/staff/dashboard")
+                 }
+            } else {
+                 router.push("/parent/dashboard")
+            }
+        }, 500)
+      } else {
+        console.log(result)
+        // Check for specific statuses to give better feedback
+        if (result.status === "needs_first_factor") {
+            setError("Login incomplete. Additional verification required (e.g. Email Code).")
+        } else if (result.status === "needs_second_factor") {
+            setError("Login incomplete. Two-factor authentication required.")
+        } else if (result.status === "needs_identifier") {
+            setError("Login incomplete. Please provide your email.")
+        } else {
+            setError(`Login incomplete. Status: ${result.status}`)
         }
       }
-    }, 1500)
+    } catch (err: any) {
+      console.error("Login error:", err)
+      const errors = err.errors || []
+      const error = errors[0]
+      
+      if (error?.code === "form_identifier_not_found") {
+        setError("Account not found. Please contact your administrator.")
+      } else if (error?.code === "form_password_incorrect") {
+        setError("Incorrect password. Please try again.")
+      } else if (error?.code === "too_many_attempts") {
+         setError("Too many attempts. Please try again later.")
+      } else {
+        setError(error?.longMessage || "An unexpected error occurred.")
+      }
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // Icons mapping for classes (simplified)
@@ -126,19 +155,6 @@ export default function LoginPage() {
     if (n.includes("nursery")) return <Sprout className="h-6 w-6" />
     if (n.includes("afterschool") || n.includes("primary")) return <Rocket className="h-6 w-6" />
     return <GraduationCap className="h-6 w-6" />
-  }
-
-  // Quick fill for testing
-  const fillAdmin = () => {
-    setLoginView("staff")
-    setEmail("admin@bayhood.com")
-    setPassword("admin123")
-  }
-
-  const fillStaff = () => {
-    setLoginView("staff")
-    setEmail("staff@bayhood.com")
-    setPassword("staff123")
   }
 
   return (
@@ -261,6 +277,14 @@ export default function LoginPage() {
                   {loginView === "staff" ? "Staff Login" : "Parent Portal"}
                 </h2>
                 
+                {error && (
+                  <Alert variant="destructive" className="mb-6">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                
                 <form className="space-y-6" onSubmit={handleLogin}>
                   
                   {loginView === "staff" ? (
@@ -279,7 +303,7 @@ export default function LoginPage() {
                               placeholder="name@school.com" 
                               type="email"
                               value={email}
-                              onChange={(e) => handleEmailChange(e.target.value)}
+                              onChange={(e) => setEmail(e.target.value)}
                               required
                             />
                           </div>
@@ -306,45 +330,24 @@ export default function LoginPage() {
                           </div>
                         </div>
                       </div>
-
-                      {email.toLowerCase() !== "admin@bayhood.com" && (
-                        <div>
-                          <label className="block text-sm font-bold text-[#1e2b6d] mb-4">Select Your Assigned Class</label>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                            {classesData.slice(0, 4).map((cls) => (
-                              <button 
-                                key={cls.id}
-                                type="button"
-                                onClick={() => setClassId(cls.id)}
-                                className={`group flex flex-col items-center justify-center p-4 border-2 rounded-2xl transition-all duration-300 ${classId === cls.id ? "border-[#1e2b6d] bg-[#1e2b6d] text-white shadow-lg scale-105" : "border-slate-100 bg-white hover:border-[#1e2b6d]/30 hover:shadow-md"}`}
-                              >
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-colors ${classId === cls.id ? "bg-white/20 text-white" : "bg-[#eff6ff] text-[#1e2b6d] group-hover:bg-[#1e2b6d] group-hover:text-white"}`}>
-                                  {getClassIcon(cls.name)}
-                                </div>
-                                <span className="text-xs font-bold">{cls.name}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </>
                   ) : (
                     <>
                        <div className="grid grid-cols-1 gap-6">
                         <div>
-                          <label className="block text-sm font-bold text-[#1e2b6d] mb-2" htmlFor="pupil-id">Pupil ID</label>
+                          <label className="block text-sm font-bold text-[#1e2b6d] mb-2" htmlFor="parent-email">Email Address</label>
                           <div className="relative group">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#1e2b6d]/40 group-focus-within:text-[#1e2b6d] transition-colors">
-                              <User className="h-5 w-5" />
+                              <AtSign className="h-5 w-5" />
                             </span>
                             <input 
                               className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:ring-0 focus:border-[#1e2b6d] transition-all outline-none text-sm font-medium" 
-                              id="pupil-id" 
-                              name="pupil-id" 
-                              placeholder="BH-001" 
-                              type="text"
-                              value={parentPupilId}
-                              onChange={(e) => setParentPupilId(e.target.value)}
+                              id="parent-email" 
+                              name="parent-email" 
+                              placeholder="parent@example.com" 
+                              type="email"
+                              value={parentEmail}
+                              onChange={(e) => setParentEmail(e.target.value)}
                               required
                             />
                           </div>
@@ -388,29 +391,7 @@ export default function LoginPage() {
 
         </div>
         
-        {/* Quick Access for Testing */}
-        <div className="mt-8 p-6 bg-[#facc15]/20 border-2 border-[#facc15] rounded-3xl w-full backdrop-blur-sm">
-          <div className="flex items-center gap-2 mb-4 text-[#1e2b6d] font-bold">
-            <Lock className="h-5 w-5" />
-            <span>Quick Access for Testing:</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button 
-              onClick={fillAdmin}
-              className="text-left p-3 bg-white/50 hover:bg-white rounded-xl transition-colors cursor-pointer"
-            >
-              <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Administrator</div>
-              <div className="font-bold text-[#1e2b6d] text-sm">admin@bayhood.com</div>
-            </button>
-            <button 
-              onClick={fillStaff}
-              className="text-left p-3 bg-white/50 hover:bg-white rounded-xl transition-colors cursor-pointer"
-            >
-              <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Staff Member</div>
-              <div className="font-bold text-[#1e2b6d] text-sm">staff@bayhood.com</div>
-            </button>
-          </div>
-        </div>
+
 
         <div className="mt-8 text-center">
            <p className="text-xs font-medium text-slate-500">© 2024 Bayhood Preparatory School. All rights reserved.</p>
