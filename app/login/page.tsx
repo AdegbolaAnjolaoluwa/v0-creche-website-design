@@ -226,19 +226,16 @@ export default function LoginPage() {
             Your account is signed in but does not have the required permissions to access the dashboard.
           </p>
 
-          {isAdminEmail && (
-            <div className="mb-4">
-              <p className="text-sm text-muted-foreground mb-2">It looks like you should be an admin.</p>
+          <div className="mb-4">
               <Button
                 onClick={handleFixPermissions}
                 disabled={isFixing}
                 className="w-full mb-3"
               >
                 {isFixing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {isFixing ? "Fixing..." : "Fix My Permissions"}
+                {isFixing ? "Fixing..." : "Auto-Fix Permissions"}
               </Button>
-            </div>
-          )}
+          </div>
 
           <button
             onClick={() => signOut(() => router.push("/login"))}

@@ -15,7 +15,7 @@ export type Pupil = {
 }
 
 export const pupilsData: Pupil[] = [
-  // Nursery 2
+  // NURSERY 2
   {
     id: "BH-N2-001",
     name: "Agboola Jasmine",
@@ -45,16 +45,16 @@ export const pupilsData: Pupil[] = [
   },
   {
     id: "BH-N2-004",
-    name: "Inegbeneoe Gerald",
+    name: "Inegbenose Gerald",
     class: "Nursery 2",
     gender: "Male",
     dateOfBirth: "2019-11-03",
-    guardians: [{ name: "Mr. and Mrs. Inegbeneoe", contactNumber: "+2348000000004" }],
+    guardians: [{ name: "Mr. and Mrs. Inegbenose", contactNumber: "+2348000000004" }],
     enrollmentDate: "2023-09-06",
   },
   {
     id: "BH-N2-005",
-    name: "Kazeem Imide",
+    name: "Kazeem Iremide",
     class: "Nursery 2",
     gender: "Male",
     dateOfBirth: "2020-01-27",
@@ -63,26 +63,27 @@ export const pupilsData: Pupil[] = [
   },
   {
     id: "BH-N2-006",
-    name: "Fakude Mabel",
+    name: "Fakuade Mirabel",
     class: "Nursery 2",
     gender: "Female",
     dateOfBirth: "2020-06-14",
-    guardians: [{ name: "Mr. and Mrs. Fakude", contactNumber: "+2348000000006" }],
+    guardians: [{ name: "Mr. and Mrs. Fakuade", contactNumber: "+2348000000006" }],
     enrollmentDate: "2023-09-07",
   },
-  // Nursery 1
+
+  // NURSERY 1
   {
     id: "BH-N1-001",
-    name: "Adebayo Ayomide",
+    name: "Adebero Ayomide",
     class: "Nursery 1",
     gender: "Female",
     dateOfBirth: "2021-03-10",
-    guardians: [{ name: "Mr. and Mrs. Adebayo", contactNumber: "+2348000000007" }],
+    guardians: [{ name: "Mr. and Mrs. Adebero", contactNumber: "+2348000000007" }],
     enrollmentDate: "2023-09-08",
   },
   {
     id: "BH-N1-002",
-    name: "Adedoyin Judith",
+    name: "Adedoyin Jedidah",
     class: "Nursery 1",
     gender: "Female",
     dateOfBirth: "2021-07-19",
@@ -91,9 +92,9 @@ export const pupilsData: Pupil[] = [
   },
   {
     id: "BH-N1-003",
-    name: "Adeshida Fiyin",
+    name: "Adeshida David",
     class: "Nursery 1",
-    gender: "Female",
+    gender: "Male",
     dateOfBirth: "2021-01-05",
     guardians: [{ name: "Mr. and Mrs. Adeshida", contactNumber: "+2348000000009" }],
     enrollmentDate: "2023-09-09",
@@ -103,16 +104,16 @@ export const pupilsData: Pupil[] = [
     name: "Emokpea Louisa",
     class: "Nursery 1",
     gender: "Female",
-    dateOfBirth: "2021-09-23",
+    dateOfBirth: "2021-05-22",
     guardians: [{ name: "Mr. and Mrs. Emokpea", contactNumber: "+2348000000010" }],
     enrollmentDate: "2023-09-09",
   },
   {
     id: "BH-N1-005",
-    name: "Ohiomah Divine",
+    name: "Ohiomah Davina",
     class: "Nursery 1",
     gender: "Female",
-    dateOfBirth: "2021-05-30",
+    dateOfBirth: "2021-09-15",
     guardians: [{ name: "Mr. and Mrs. Ohiomah", contactNumber: "+2348000000011" }],
     enrollmentDate: "2023-09-10",
   },
@@ -121,90 +122,92 @@ export const pupilsData: Pupil[] = [
     name: "Akpan Light",
     class: "Nursery 1",
     gender: "Male",
-    dateOfBirth: "2021-11-12",
+    dateOfBirth: "2021-02-28",
     guardians: [{ name: "Mr. and Mrs. Akpan", contactNumber: "+2348000000012" }],
     enrollmentDate: "2023-09-10",
   },
   {
     id: "BH-N1-007",
-    name: "Ose-Amen Greatgolden",
+    name: "Ose-Amen Serahgolden",
     class: "Nursery 1",
-    gender: "Male",
-    dateOfBirth: "2021-08-08",
+    gender: "Female",
+    dateOfBirth: "2021-11-11",
     guardians: [{ name: "Mr. and Mrs. Ose-Amen", contactNumber: "+2348000000013" }],
     enrollmentDate: "2023-09-11",
   },
-  // Preschool 2
-  {
-    id: "BH-PS2-001",
-    name: "Onadefeji Zemirah",
-    class: "Preschool 2",
-    gender: "Female",
-    dateOfBirth: "2022-02-14",
-    guardians: [{ name: "Mr. and Mrs. Onadefeji", contactNumber: "+2348000000014" }],
-    enrollmentDate: "2024-09-05",
-  },
+
+  // PRESCHOOL 2
   {
     id: "BH-PS2-002",
-    name: "Popoola Adekisha",
+    name: "Onafadeji Zemirah",
     class: "Preschool 2",
     gender: "Female",
-    dateOfBirth: "2022-05-09",
-    guardians: [{ name: "Mr. and Mrs. Popoola", contactNumber: "+2348000000015" }],
+    dateOfBirth: "2022-04-12",
+    guardians: [{ name: "Mr. and Mrs. Onafadeji", contactNumber: "+2348000000014" }],
     enrollmentDate: "2024-09-05",
   },
   {
     id: "BH-PS2-003",
+    name: "Popoola Adekiisha",
+    class: "Preschool 2",
+    gender: "Female",
+    dateOfBirth: "2022-06-25",
+    guardians: [{ name: "Mr. and Mrs. Popoola", contactNumber: "+2348000000015" }],
+    enrollmentDate: "2024-09-05",
+  },
+  {
+    id: "BH-PS2-004",
     name: "Kareem Jayden",
     class: "Preschool 2",
     gender: "Male",
-    dateOfBirth: "2022-01-28",
+    dateOfBirth: "2022-01-30",
     guardians: [{ name: "Mr. and Mrs. Kareem", contactNumber: "+2348000000016" }],
     enrollmentDate: "2024-09-06",
   },
   {
-    id: "BH-PS2-004",
-    name: "Ikejiuba Timile",
+    id: "BH-PS2-005",
+    name: "Ikejimba Tonia",
     class: "Preschool 2",
-    gender: "Male",
-    dateOfBirth: "2022-07-03",
-    guardians: [{ name: "Mr. and Mrs. Ikejiuba", contactNumber: "+2348000000017" }],
+    gender: "Female",
+    dateOfBirth: "2022-08-14",
+    guardians: [{ name: "Mr. and Mrs. Ikejimba", contactNumber: "+2348000000017" }],
     enrollmentDate: "2024-09-06",
   },
   {
-    id: "BH-PS2-005",
+    id: "BH-PS2-006",
     name: "Afolabi Ezekiel",
     class: "Preschool 2",
     gender: "Male",
-    dateOfBirth: "2022-03-19",
+    dateOfBirth: "2022-03-03",
     guardians: [{ name: "Mr. and Mrs. Afolabi", contactNumber: "+2348000000018" }],
     enrollmentDate: "2024-09-07",
   },
   {
-    id: "BH-PS2-006",
+    id: "BH-PS2-007",
     name: "Adeshina Khalid",
     class: "Preschool 2",
     gender: "Male",
-    dateOfBirth: "2022-09-25",
+    dateOfBirth: "2022-05-20",
     guardians: [{ name: "Mr. and Mrs. Adeshina", contactNumber: "+2348000000019" }],
     enrollmentDate: "2024-09-07",
   },
   {
-    id: "BH-PS2-007",
+    id: "BH-PS2-008",
     name: "George Angel",
     class: "Preschool 2",
     gender: "Female",
-    dateOfBirth: "2022-11-30",
+    dateOfBirth: "2022-09-09",
     guardians: [{ name: "Mr. and Mrs. George", contactNumber: "+2348000000020" }],
     enrollmentDate: "2024-09-08",
   },
-  // Preschool 1
+
+  // PRESCHOOL 1
   {
     id: "BH-PS1-001",
-    name: "Agboola Ajita",
+    name: "Agboola Anita",
     class: "Preschool 1",
     gender: "Female",
-    dateOfBirth: "2023-02-10",
+    dateOfBirth: "2023-02-15",
     guardians: [{ name: "Mr. and Mrs. Agboola", contactNumber: "+2348000000021" }],
     enrollmentDate: "2025-09-05",
   },
@@ -213,35 +216,35 @@ export const pupilsData: Pupil[] = [
     name: "Adeyemo Micah",
     class: "Preschool 1",
     gender: "Male",
-    dateOfBirth: "2023-04-18",
+    dateOfBirth: "2023-05-10",
     guardians: [{ name: "Mr. and Mrs. Adeyemo", contactNumber: "+2348000000022" }],
     enrollmentDate: "2025-09-05",
   },
   {
     id: "BH-PS1-003",
-    name: "Ogara Elijah",
+    name: "Opara Elyon",
     class: "Preschool 1",
-    gender: "Male",
-    dateOfBirth: "2023-06-07",
-    guardians: [{ name: "Mr. and Mrs. Ogara", contactNumber: "+2348000000023" }],
+    gender: "Female",
+    dateOfBirth: "2023-08-22",
+    guardians: [{ name: "Mr. and Mrs. Opara", contactNumber: "+2348000000023" }],
     enrollmentDate: "2025-09-06",
   },
   {
     id: "BH-PS1-004",
-    name: "Sha Faiza",
+    name: "Sha Fahiza",
     class: "Preschool 1",
     gender: "Female",
-    dateOfBirth: "2023-01-25",
+    dateOfBirth: "2023-01-05",
     guardians: [{ name: "Mr. and Mrs. Sha", contactNumber: "+2348000000024" }],
     enrollmentDate: "2025-09-06",
   },
   {
     id: "BH-PS1-005",
-    name: "Ineghenose Harry",
+    name: "Inegbenose Harry",
     class: "Preschool 1",
     gender: "Male",
-    dateOfBirth: "2023-05-13",
-    guardians: [{ name: "Mr. and Mrs. Ineghenose", contactNumber: "+2348000000025" }],
+    dateOfBirth: "2023-11-12",
+    guardians: [{ name: "Mr. and Mrs. Inegbenose", contactNumber: "+2348000000025" }],
     enrollmentDate: "2025-09-07",
   },
   {
@@ -249,7 +252,7 @@ export const pupilsData: Pupil[] = [
     name: "Harrison Nathan",
     class: "Preschool 1",
     gender: "Male",
-    dateOfBirth: "2023-08-02",
+    dateOfBirth: "2023-04-18",
     guardians: [{ name: "Mr. and Mrs. Harrison", contactNumber: "+2348000000026" }],
     enrollmentDate: "2025-09-07",
   },
@@ -258,63 +261,64 @@ export const pupilsData: Pupil[] = [
     name: "Eke Star",
     class: "Preschool 1",
     gender: "Female",
-    dateOfBirth: "2023-03-29",
+    dateOfBirth: "2023-07-30",
     guardians: [{ name: "Mr. and Mrs. Eke", contactNumber: "+2348000000027" }],
     enrollmentDate: "2025-09-08",
   },
   {
     id: "BH-PS1-008",
-    name: "Agboyin Jephzibah",
+    name: "Agbonyin Hephzibah",
     class: "Preschool 1",
     gender: "Female",
-    dateOfBirth: "2023-07-21",
-    guardians: [{ name: "Mr. and Mrs. Agboyin", contactNumber: "+2348000000028" }],
+    dateOfBirth: "2023-10-05",
+    guardians: [{ name: "Mr. and Mrs. Agbonyin", contactNumber: "+2348000000028" }],
     enrollmentDate: "2025-09-08",
   },
   {
     id: "BH-PS1-009",
-    name: "Ogukie Joy",
+    name: "Oguike Joy",
     class: "Preschool 1",
     gender: "Female",
-    dateOfBirth: "2023-09-11",
-    guardians: [{ name: "Mr. and Mrs. Ogukie", contactNumber: "+2348000000029" }],
+    dateOfBirth: "2023-12-25",
+    guardians: [{ name: "Mr. and Mrs. Oguike", contactNumber: "+2348000000029" }],
     enrollmentDate: "2025-09-09",
   },
-  // Playgroup
+
+  // PLAYGROUP
   {
     id: "BH-PG-001",
     name: "Fagade Samuel",
     class: "Playgroup",
     gender: "Male",
-    dateOfBirth: "2024-01-05",
+    dateOfBirth: "2024-02-14",
     guardians: [{ name: "Mr. and Mrs. Fagade", contactNumber: "+2348000000030" }],
     enrollmentDate: "2025-09-10",
   },
   {
     id: "BH-PG-002",
-    name: "Innocent Nathan",
+    name: "Innocent Jotham",
     class: "Playgroup",
     gender: "Male",
-    dateOfBirth: "2024-03-14",
+    dateOfBirth: "2024-04-01",
     guardians: [{ name: "Mr. and Mrs. Innocent", contactNumber: "+2348000000031" }],
     enrollmentDate: "2025-09-10",
   },
   {
     id: "BH-PG-003",
-    name: "Popoola Adekishi",
+    name: "Popoola Adekiisha",
     class: "Playgroup",
     gender: "Female",
-    dateOfBirth: "2024-05-22",
+    dateOfBirth: "2024-06-15",
     guardians: [{ name: "Mr. and Mrs. Popoola", contactNumber: "+2348000000032" }],
     enrollmentDate: "2025-09-11",
   },
   {
     id: "BH-PG-004",
-    name: "Ayowole Mabel",
+    name: "Ayotunde Nabeel",
     class: "Playgroup",
-    gender: "Female",
-    dateOfBirth: "2024-02-17",
-    guardians: [{ name: "Mr. and Mrs. Ayowole", contactNumber: "+2348000000033" }],
+    gender: "Male",
+    dateOfBirth: "2024-01-20",
+    guardians: [{ name: "Mr. and Mrs. Ayotunde", contactNumber: "+2348000000033" }],
     enrollmentDate: "2025-09-11",
   },
   {
@@ -322,17 +326,17 @@ export const pupilsData: Pupil[] = [
     name: "Okonkwo Marvelous",
     class: "Playgroup",
     gender: "Male",
-    dateOfBirth: "2024-06-09",
+    dateOfBirth: "2024-05-05",
     guardians: [{ name: "Mr. and Mrs. Okonkwo", contactNumber: "+2348000000034" }],
     enrollmentDate: "2025-09-12",
   },
   {
     id: "BH-PG-006",
-    name: "Jecolua Diadem",
+    name: "Jejeola Diadem",
     class: "Playgroup",
     gender: "Female",
-    dateOfBirth: "2024-04-28",
-    guardians: [{ name: "Mr. and Mrs. Jecolua", contactNumber: "+2348000000035" }],
+    dateOfBirth: "2024-03-30",
+    guardians: [{ name: "Mr. and Mrs. Jejeola", contactNumber: "+2348000000035" }],
     enrollmentDate: "2025-09-12",
   },
   {
@@ -340,60 +344,60 @@ export const pupilsData: Pupil[] = [
     name: "Odunsanya Valera",
     class: "Playgroup",
     gender: "Female",
-    dateOfBirth: "2024-08-16",
+    dateOfBirth: "2024-07-07",
     guardians: [{ name: "Mr. and Mrs. Odunsanya", contactNumber: "+2348000000036" }],
     enrollmentDate: "2025-09-13",
   },
   {
     id: "BH-PG-008",
-    name: "Lamidi Zody",
+    name: "Lamidi Zoey",
     class: "Playgroup",
-    gender: "Male",
-    dateOfBirth: "2024-10-03",
+    gender: "Female",
+    dateOfBirth: "2024-08-20",
     guardians: [{ name: "Mr. and Mrs. Lamidi", contactNumber: "+2348000000037" }],
     enrollmentDate: "2025-09-13",
   },
 ]
 
-export const classesData = [
+export type Class = {
+  id: string
+  name: string
+  description: string
+  ageRange: string
+  teacherName: string
+  pupilCount: number
+  subjects: string[]
+}
+
+export const classesData: Class[] = [
   {
     id: "class-001",
     name: "Creche",
-    description:
-      "For children aged 3 months to 2 years. Focused on nurturing care, sensory play, and early development milestones.",
-    ageRange: "3 months - 2 years",
-    teacherName: "Alexander Anwangbasi Joy",
-    pupilCount: 18,
-    subjects: ["Motor Skills", "Social Interaction", "Basic Recognition", "Sensory Development"],
+    description: "A warm, nurturing environment for your little ones. We focus on sensory play and basic motor skills.",
+    ageRange: "3 months - 1.5 years",
+    teacherName: "Omotosho Mary",
+    pupilCount: 0,
+    subjects: ["Sensory Play", "Music", "Tummy Time", "Story Telling"],
   },
   {
     id: "class-002",
     name: "Nursery 1",
     description:
-      "For children aged 2-3 years. Introducing structured learning through play, basic concepts, and social skills.",
-    ageRange: "2-3 years",
+      "Introduction to structured learning. Children learn basics of numbers, alphabets, and social interaction.",
+    ageRange: "1.5 - 2 years",
     teacherName: "Adegoke Oluwatosin Elizabeth",
-    pupilCount: 28,
-    subjects: ["Alphabets", "Numbers", "Coloring", "Rhymes", "Basic Writing", "Social Skills"],
+    pupilCount: 7,
+    subjects: ["Numeracy", "Literacy", "Art & Craft", "Rhymes", "Nature Talk"],
   },
   {
     id: "class-003",
     name: "Nursery 2",
     description:
-      "For children aged 3-4 years. Building pre-academic foundations, language development, and creative expression.",
-    ageRange: "3-4 years",
-    teacherName: "Teniola Fetinoluwa Christiana",
-    pupilCount: 32,
-    subjects: [
-      "Reading",
-      "Writing",
-      "Arithmetic",
-      "Arts & Crafts",
-      "Science",
-      "Social Studies",
-      "Physical Education",
-      "Music",
-    ],
+      "Building on the foundation. More focus on writing, reading simple words, and understanding the world around them.",
+    ageRange: "2-3 years",
+    teacherName: "Alexander Anwangabasi Joy",
+    pupilCount: 6,
+    subjects: ["Numeracy", "Literacy", "Phonics", "General Science", "Handwriting"],
   },
   {
     id: "class-004",
@@ -401,8 +405,8 @@ export const classesData = [
     description:
       "An introductory program that helps children adjust to school routines through guided play and social interaction.",
     ageRange: "18 months - 3 years",
-    teacherName: "Fagade Samuel",
-    pupilCount: 16,
+    teacherName: "Teniola Feluntoluwa Christiana",
+    pupilCount: 8,
     subjects: ["Free Play", "Circle Time", "Music & Movement", "Outdoor Play"],
   },
   {
@@ -411,8 +415,8 @@ export const classesData = [
     description:
       "For children progressing from playgroup. Focused on language development, number sense, and social confidence.",
     ageRange: "3-4 years",
-    teacherName: "Akinnade Oluwafemi",
-    pupilCount: 20,
+    teacherName: "Akinmade Oluwaferanmi",
+    pupilCount: 9,
     subjects: ["Pre-reading", "Pre-writing", "Numbers", "Practical Life", "Rhymes", "Story Time"],
   },
   {
@@ -422,7 +426,7 @@ export const classesData = [
       "For children preparing to enter Nursery 1. Reinforces pre-academic skills, independence, and classroom routines.",
     ageRange: "4-5 years",
     teacherName: "Damisa Yetunde Halimat",
-    pupilCount: 22,
+    pupilCount: 7,
     subjects: ["Reading Readiness", "Writing Readiness", "Mathematics Concepts", "Science Exploration", "Art & Music"],
   },
 ]
@@ -460,7 +464,7 @@ export const resultsData: ResultRecord[] = [
   {
     id: "R002",
     pupilId: "BH-N1-002",
-    pupilName: "Adedoyin Judith",
+    pupilName: "Adedoyin Jedidah",
     class: "Nursery 1",
     term: "Term 2",
     averageScore: 82.3,
@@ -470,7 +474,7 @@ export const resultsData: ResultRecord[] = [
   },
   {
     id: "R003",
-    pupilId: "BH-PS2-003",
+    pupilId: "BH-PS2-004",
     pupilName: "Kareem Jayden",
     class: "Preschool 2",
     term: "Term 2",
@@ -482,7 +486,7 @@ export const resultsData: ResultRecord[] = [
   {
     id: "R004",
     pupilId: "BH-N2-006",
-    pupilName: "Fakude Mabel",
+    pupilName: "Fakuade Mirabel",
     class: "Nursery 2",
     term: "Term 2",
     averageScore: 91.2,
@@ -493,7 +497,7 @@ export const resultsData: ResultRecord[] = [
   {
     id: "R005",
     pupilId: "BH-N1-005",
-    pupilName: "Ohiomah Divine",
+    pupilName: "Ohiomah Davina",
     class: "Nursery 1",
     term: "Term 2",
     averageScore: 88.5,
@@ -510,11 +514,5 @@ export const calculateAttendanceScore = (attendancePercentage: number): number =
 
 export const calculateFinalScore = (academicAverage: number, attendanceScore: number): number => {
     // Final score = Academic Average (e.g., out of 100) + Attendance Score (e.g., out of 5)
-    // Or weighted average? For now, let's assume it's additive or weighted
-    // If academic is 95% and attendance is 5/5, total could be 100
-    // But usually academic is max 95? 
-    // Let's assume academic is 100% and we add bonus? Or academic is scaled?
-    
-    // Simple implementation based on existing usage in edit page:
     return academicAverage + attendanceScore
 }
