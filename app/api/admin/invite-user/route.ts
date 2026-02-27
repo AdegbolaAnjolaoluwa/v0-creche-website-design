@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       organizationId: orgId,
       emailAddress: email,
       role: role, // e.g., 'org:staff' or 'org:parent'
-      redirectUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+      redirectUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://bayhood.vercel.app',
     })
 
     return NextResponse.json({ invitation })
