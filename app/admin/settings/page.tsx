@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Bell, BookOpen, Calendar, ChevronDown, Home, Lock, Save, User, Users, ShieldCheck } from "lucide-react"
+import { Bell, BookOpen, Calendar, ChevronDown, Home, Lock, Save, User, Users, ShieldCheck, Mail } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/hooks/use-toast"
 import { classesData } from "@/lib/data"
 
 const STAFF_ASSIGNMENTS_KEY = "staffClassAssignments"
@@ -38,7 +39,12 @@ const academicYears = Array.from({ length: 8 }, (_, i) => {
 })
 
 export default function SettingsPage() {
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState("")
+  const [inviteRole, setInviteRole] = useState("org:staff")
+  const [isInviting, setIsInviting] = useState(false)
+
   const [staffAssignments, setStaffAssignments] = useState<Record<string, StaffAssignment>>(() => {
     if (typeof window !== "undefined") {
       const stored = window.localStorage.getItem(STAFF_ASSIGNMENTS_KEY)
@@ -73,6 +79,38 @@ export default function SettingsPage() {
     setTimeout(() => {
       setIsLoading(false)
     }, 1500)
+  }
+
+  const handleInviteUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsInviting(true)
+
+    try {
+      const res = await fetch("/api/admin/invite-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || "Failed to invite user")
+      }
+
+      toast({
+        title: "Invitation Sent",
+        description: `Successfully invited ${inviteEmail} as ${inviteRole === 'org:staff' ? 'Staff' : 'Parent'}`,
+      })
+      setInviteEmail("")
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      })
+    } finally {
+      setIsInviting(false)
+    }
   }
 
   const handleStaffChange = (classId: string, field: keyof StaffAssignment, value: string) => {
@@ -254,9 +292,53 @@ export default function SettingsPage() {
             <TabsList>
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="staff">Staff Assignment</TabsTrigger>
+              <TabsTrigger value="invitations">Invitations</TabsTrigger>
               <TabsTrigger value="security">Security</TabsTrigger>
               <TabsTrigger value="grading">Grading System</TabsTrigger>
             </TabsList>
+            <TabsContent value="invitations" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Invite Users</CardTitle>
+                  <CardDescription>Send invitations to new staff members or parents.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleInviteUser} className="space-y-4 max-w-md">
+                    <div className="space-y-2">
+                      <Label htmlFor="invite-email">Email Address</Label>
+                      <Input 
+                        id="invite-email" 
+                        type="email" 
+                        placeholder="user@example.com" 
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="invite-role">Role</Label>
+                      <Select value={inviteRole} onValueChange={setInviteRole}>
+                        <SelectTrigger id="invite-role">
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="org:staff">Staff</SelectItem>
+                          <SelectItem value="org:parent">Parent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button type="submit" disabled={isInviting}>
+                      {isInviting ? "Sending..." : (
+                        <>
+                          <Mail className="mr-2 h-4 w-4" />
+                          Send Invitation
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
             <TabsContent value="general" className="space-y-4">
               <Card>
                 <CardHeader>
