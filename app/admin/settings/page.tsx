@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Bell, BookOpen, Calendar, ChevronDown, Home, Lock, Save, User, Users, ShieldCheck, Mail } from "lucide-react"
+import { Bell, BookOpen, Calendar, ChevronDown, Home, Lock, Save, User, Users, ShieldCheck, Mail, Trash2, Edit2, Loader2, RefreshCw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,12 +23,35 @@ import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { classesData } from "@/lib/data"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 const STAFF_ASSIGNMENTS_KEY = "staffClassAssignments"
 
 type StaffAssignment = {
   name: string
   email: string
+}
+
+type UserType = {
+  id: string
+  email: string
+  firstName: string | null
+  lastName: string | null
+  role: string
+  createdAt: number
+  lastSignInAt: number | null
 }
 
 const currentYear = new Date().getFullYear()
@@ -44,6 +67,11 @@ export default function SettingsPage() {
   const [inviteEmail, setInviteEmail] = useState("")
   const [inviteRole, setInviteRole] = useState("org:staff")
   const [isInviting, setIsInviting] = useState(false)
+  
+  // Users Management State
+  const [users, setUsers] = useState<UserType[]>([])
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<string | null>(null)
 
   const [staffAssignments, setStaffAssignments] = useState<Record<string, StaffAssignment>>(() => {
     if (typeof window !== "undefined") {
@@ -69,7 +97,51 @@ export default function SettingsPage() {
     return {}
   })
 
-  const handleSave = () => {
+  useEffect(() => {
+     fetchUsers()
+  }, [])
+
+  const fetchUsers = async () => {
+     setIsLoadingUsers(true)
+     try {
+         const res = await fetch("/api/admin/users")
+         if (res.ok) {
+             const data = await res.json()
+             setUsers(data.users)
+         }
+     } catch (e) {
+         console.error("Failed to fetch users", e)
+     } finally {
+         setIsLoadingUsers(false)
+     }
+  }
+
+  const handleDeleteUserById = async (id: string) => {
+       try {
+           const res = await fetch(`/api/admin/users?id=${id}`, {
+               method: "DELETE"
+           })
+           
+           if (res.ok) {
+               setUsers(prev => prev.filter(u => u.id !== id))
+               toast({
+                   title: "User Deleted",
+                   description: "The user has been permanently deleted."
+               })
+           } else {
+               const err = await res.json()
+               throw new Error(err.error || "Failed to delete")
+           }
+       } catch (error: any) {
+           toast({
+               title: "Error",
+               description: error.message,
+               variant: "destructive"
+           })
+       }
+   }
+
+   const handleSave = () => {
     setIsLoading(true)
     // Save staff assignments to localStorage
     if (typeof window !== "undefined") {
@@ -106,6 +178,7 @@ export default function SettingsPage() {
         description: `We've sent an email invitation to ${inviteEmail} to join as an ${roleName}.`,
       })
       setInviteEmail("")
+      fetchUsers() // Refresh list
     } catch (error: any) {
       toast({
         title: "Error",
@@ -304,11 +377,11 @@ export default function SettingsPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Invite Users</CardTitle>
-                  <CardDescription>Send invitations to new staff members or parents.</CardDescription>
+                  <CardDescription>Create new accounts for staff, parents, or admins.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleInviteUser} className="space-y-4 max-w-md">
-                    <div className="space-y-2">
+                  <form onSubmit={handleInviteUser} className="flex flex-col sm:flex-row gap-4 items-end">
+                    <div className="grid gap-2 flex-1">
                       <Label htmlFor="invite-email">Email Address</Label>
                       <Input 
                         id="invite-email" 
@@ -319,7 +392,7 @@ export default function SettingsPage() {
                         required
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="grid gap-2 w-full sm:w-[200px]">
                       <Label htmlFor="invite-role">Role</Label>
                       <Select value={inviteRole} onValueChange={setInviteRole}>
                         <SelectTrigger id="invite-role">
@@ -333,14 +406,120 @@ export default function SettingsPage() {
                       </Select>
                     </div>
                     <Button type="submit" disabled={isInviting}>
-                      {isInviting ? "Sending..." : (
-                        <>
-                          <Mail className="mr-2 h-4 w-4" />
-                          Send Invitation
-                        </>
-                      )}
+                      {isInviting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
+                      {isInviting ? "Sending..." : "Invite"}
                     </Button>
                   </form>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>User Management</CardTitle>
+                        <CardDescription>View and manage all active users in the system.</CardDescription>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={fetchUsers} disabled={isLoadingUsers}>
+                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingUsers ? 'animate-spin' : ''}`} />
+                        Refresh
+                    </Button>
+                </CardHeader>
+                <CardContent>
+                    <div className="rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>User</TableHead>
+                                    <TableHead>Role</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoadingUsers ? (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="h-24 text-center">
+                                            <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : users.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                                            No users found.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    users.map((user) => (
+                                        <TableRow key={user.id}>
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium">
+                                                        {user.firstName ? `${user.firstName} ${user.lastName || ''}` : 'No Name'}
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground">{user.email}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant={
+                                                    user.role === 'org:admin' ? 'default' : 
+                                                    user.role === 'org:staff' ? 'secondary' : 'outline'
+                                                }>
+                                                    {user.role.replace('org:', '').toUpperCase()}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-xs text-muted-foreground">
+                                                        Created: {new Date(user.createdAt).toLocaleDateString()}
+                                                    </span>
+                                                    {user.lastSignInAt && (
+                                                        <span className="text-xs text-green-600 flex items-center gap-1">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-green-600" />
+                                                            Active
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10">
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Delete User</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Are you sure you want to delete <strong>{user.email}</strong>? 
+                                                                This action cannot be undone and will permanently remove their access.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction 
+                                                                onClick={() => {
+                                                                    // We can't use state here directly if we want it to happen immediately
+                                                                    // Or we can just call a function with the ID
+                                                                    // But handleDeleteUser relies on state.
+                                                                    // Let's create a temp function or just set state and use effect?
+                                                                    // Easier: just pass ID to handleDeleteUser
+                                                                    handleDeleteUserById(user.id)
+                                                                }}
+                                                                className="bg-destructive hover:bg-destructive/90"
+                                                            >
+                                                                Delete
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
               </Card>
             </TabsContent>
