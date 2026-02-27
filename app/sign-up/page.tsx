@@ -5,11 +5,12 @@ import type React from "react"
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useSignUp, useSignIn } from "@clerk/nextjs"
+import { useSignUp, useSignIn, useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { AtSign, Lock, Eye, EyeOff, Loader2, AlertCircle, ArrowLeft } from "lucide-react"
 import { Fredoka, Inter } from "next/font/google"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useEffect } from "react"
 
 const fredoka = Fredoka({ subsets: ["latin"], variable: "--font-fredoka" })
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
@@ -17,7 +18,23 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 export default function SignUpPage() {
   const { isLoaded, signUp, setActive } = useSignUp()
   const { isLoaded: isSignInLoaded, signIn, setActive: setSignInActive } = useSignIn()
+  const { isSignedIn, user } = useUser()
   const router = useRouter()
+  
+  useEffect(() => {
+    if (isSignedIn && user) {
+        // Already signed in, redirect
+        const role = (user.publicMetadata as any)?.role
+        const email = user.primaryEmailAddress?.emailAddress || ""
+        if (role === 'org:admin' || email.toLowerCase().includes("admin") || email.toLowerCase().includes("anjeesax")) {
+           router.replace("/admin/dashboard")
+       } else if (role === 'org:staff') {
+           router.replace("/staff/dashboard")
+       } else {
+           router.replace("/parent/dashboard")
+       }
+    }
+  }, [isSignedIn, user, router])
   
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -51,9 +68,9 @@ export default function SignUpPage() {
     } catch (err: any) {
       console.error(JSON.stringify(err, null, 2))
       const errors = err.errors || []
-      const errorMsg = errors[0]?.longMessage || errors[0]?.message
+      const errorMsg = errors[0]?.longMessage || errors[0]?.message || ""
       
-      if (errorMsg?.includes("already exists")) {
+      if (errorMsg.includes("already exists") || errorMsg.includes("form_identifier_exists")) {
           // If user exists, maybe they need to activate (set password)?
           // We can try to initiate a "Forgot Password" flow or "Sign In with Code" flow here?
           // Since we pre-created them with NO password, we should try to sign them in with Email Code
@@ -74,9 +91,11 @@ export default function SignUpPage() {
                         setError("Please verify your account via the link in your email or log in.")
                    }
                } else {
+                  // Maybe they have a password already?
                   setError("This account already exists. Please log in.")
               }
            } catch (siErr: any) {
+               console.error("Sign In Create Error:", siErr)
                setError("This account already exists. Please log in.")
            }
       } else {
