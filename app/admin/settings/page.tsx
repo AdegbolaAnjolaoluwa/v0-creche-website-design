@@ -322,6 +322,7 @@ export default function SettingsPage() {
                           <SelectValue placeholder="Select role" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="org:admin">Admin</SelectItem>
                           <SelectItem value="org:staff">Staff</SelectItem>
                           <SelectItem value="org:parent">Parent</SelectItem>
                         </SelectContent>
