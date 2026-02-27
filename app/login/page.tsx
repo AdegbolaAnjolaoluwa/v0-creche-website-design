@@ -32,36 +32,29 @@ export default function LoginPage() {
   })
 
   useEffect(() => {
-    if (isSignedIn && user && isOrgLoaded && userMemberships.data && userMemberships.data.length > 0 && setOrgActive) {
-        const email = user.primaryEmailAddress?.emailAddress || ""
-        
-        // Always try to set active org to the first one available
-        // This is safe to call repeatedly as Clerk handles it, but ensures it's set
-        const firstOrg = userMemberships.data[0].organization
-        
-        setOrgActive({ organization: firstOrg.id })
-            .then(() => {
-                 if (
-                     email.toLowerCase().includes("admin") || 
-                     email.toLowerCase().includes("anjeesax") 
-                 ) {
-                     router.replace("/admin/dashboard")
-                 } else {
-                     router.replace("/staff/dashboard")
-                 }
-            })
-            .catch((err) => {
-                console.error("Failed to set active org:", err)
-                // Even if it fails (maybe already active), try to redirect
-                if (
-                     email.toLowerCase().includes("admin") || 
-                     email.toLowerCase().includes("anjeesax") 
-                 ) {
-                     router.replace("/admin/dashboard")
-                 } else {
-                     router.replace("/staff/dashboard")
-                 }
-            })
+    if (isSignedIn && user) {
+       const email = user.primaryEmailAddress?.emailAddress || ""
+       
+       // Check Metadata Role
+       const role = (user.publicMetadata as any)?.role
+
+       if (role === 'org:admin' || email.toLowerCase().includes("admin") || email.toLowerCase().includes("anjeesax")) {
+           router.replace("/admin/dashboard")
+       } else if (role === 'org:staff') {
+           router.replace("/staff/dashboard")
+       } else if (role === 'org:parent') {
+           router.replace("/parent/dashboard")
+       } else {
+           // Fallback to org membership logic if metadata is missing (legacy support)
+            if (isOrgLoaded && userMemberships.data && userMemberships.data.length > 0 && setOrgActive) {
+                const adminMembership = userMemberships.data.find(m => m.role === 'org:admin')
+                const targetOrg = adminMembership ? adminMembership.organization : userMemberships.data[0].organization
+                setOrgActive({ organization: targetOrg.id }).then(() => {
+                    if (adminMembership) router.replace("/admin/dashboard")
+                    else router.replace("/staff/dashboard")
+                })
+            }
+       }
     }
   }, [isSignedIn, user, router, isOrgLoaded, userMemberships, setOrgActive])
   

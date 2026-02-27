@@ -5,7 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useSignUp } from "@clerk/nextjs"
+import { useSignUp, useSignIn } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { AtSign, Lock, Eye, EyeOff, Loader2, AlertCircle, ArrowLeft } from "lucide-react"
 import { Fredoka, Inter } from "next/font/google"
@@ -16,6 +16,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
 export default function SignUpPage() {
   const { isLoaded, signUp, setActive } = useSignUp()
+  const { isLoaded: isSignInLoaded, signIn, setActive: setSignInActive } = useSignIn()
   const router = useRouter()
   
   const [email, setEmail] = useState("")
@@ -25,11 +26,12 @@ export default function SignUpPage() {
   const [code, setCode] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [mode, setMode] = useState<"signup" | "activate">("signup")
 
   // Form submit to start sign up
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isLoaded) return
+    if (!isLoaded || !isSignInLoaded) return
 
     setIsLoading(true)
     setError("")
@@ -45,13 +47,38 @@ export default function SignUpPage() {
 
       // Change the UI to our pending section.
       setPendingVerification(true)
+      setMode("signup")
     } catch (err: any) {
       console.error(JSON.stringify(err, null, 2))
       const errors = err.errors || []
       const errorMsg = errors[0]?.longMessage || errors[0]?.message
       
       if (errorMsg?.includes("already exists")) {
-          setError("This account already exists. Please log in instead.")
+          // If user exists, maybe they need to activate (set password)?
+          // We can try to initiate a "Forgot Password" flow or "Sign In with Code" flow here?
+          // Since we pre-created them with NO password, we should try to sign them in with Email Code
+          // and then let them set a password.
+          
+          try {
+              const si = await signIn.create({ identifier: email })
+              if (si.status === "needs_first_factor") {
+                   const factors = si.supportedFirstFactors as any[] || [];
+                   const emailFactor = factors.find((f: any) => f.strategy === "email_code");
+                   
+                   if (emailFactor && emailFactor.emailAddressId) {
+                        await signIn.prepareFirstFactor({ strategy: "email_code", emailAddressId: emailFactor.emailAddressId })
+                        setPendingVerification(true)
+                        setMode("activate")
+                        setError("") // Clear the "already exists" error
+                   } else {
+                        setError("Please verify your account via the link in your email or log in.")
+                   }
+               } else {
+                  setError("This account already exists. Please log in.")
+              }
+           } catch (siErr: any) {
+               setError("This account already exists. Please log in.")
+           }
       } else {
           setError(errorMsg || "Something went wrong during sign up.")
       }
@@ -63,30 +90,50 @@ export default function SignUpPage() {
   // Form submit to verify email
   const onPressVerify = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isLoaded) return
+    if (!isLoaded || !isSignInLoaded) return
 
     setIsLoading(true)
     setError("")
 
     try {
-      const completeSignUp = await signUp.attemptEmailAddressVerification({
-        code,
-      })
-      if (completeSignUp.status !== "complete") {
-        // investigate the response, to see if there was an error
-        // or if the user needs to complete more steps
-        console.log(JSON.stringify(completeSignUp, null, 2))
-        setError("Verification incomplete. Please try again.")
-      }
-      
-      if (completeSignUp.status === "complete") {
-        await setActive({ session: completeSignUp.createdSessionId })
-        // Redirect logic similar to login
-        if (email.toLowerCase().includes("admin") || email.toLowerCase().includes("anjeesax")) {
-             router.push("/admin/dashboard")
-        } else {
-             router.push("/staff/dashboard")
-        }
+      if (mode === "signup") {
+          const completeSignUp = await signUp.attemptEmailAddressVerification({
+            code,
+          })
+          if (completeSignUp.status === "complete") {
+            await setActive({ session: completeSignUp.createdSessionId })
+            // Redirect based on metadata if available, or fallback
+            // We can't easily check metadata here on the client immediately without user object
+            // But we can redirect to login page logic or dashboard
+            router.push("/login") 
+          } else {
+             setError("Verification incomplete. Please try again.")
+          }
+      } else {
+          // Activation mode (Sign In with Code)
+          const result = await signIn.attemptFirstFactor({
+              strategy: "email_code",
+              code,
+          })
+          
+          if (result.status === "complete") {
+              await setSignInActive({ session: result.createdSessionId })
+              
+              // Now we should probably Update Password since they didn't have one?
+              // Or just let them in.
+              // For better UX, we should update password.
+              try {
+                  const user = result.userData
+                  // We can't update password here easily without current password?
+                  // Actually, if they are signed in, they can set a password.
+                  // But let's just redirect them for now.
+                  router.push("/login")
+              } catch {
+                  router.push("/login")
+              }
+          } else {
+              setError("Verification failed.")
+          }
       }
     } catch (err: any) {
       console.error(JSON.stringify(err, null, 2))

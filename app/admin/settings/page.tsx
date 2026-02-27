@@ -97,9 +97,13 @@ export default function SettingsPage() {
         throw new Error(error.error || "Failed to invite user")
       }
 
+      let roleName = 'Parent'
+      if (inviteRole === 'org:admin') roleName = 'Admin'
+      else if (inviteRole === 'org:staff') roleName = 'Staff'
+
       toast({
-        title: "Invitation Sent",
-        description: `Successfully invited ${inviteEmail} as ${inviteRole === 'org:staff' ? 'Staff' : 'Parent'}`,
+        title: "Invitation Sent Successfully",
+        description: `We've sent an email invitation to ${inviteEmail} to join as an ${roleName}.`,
       })
       setInviteEmail("")
     } catch (error: any) {

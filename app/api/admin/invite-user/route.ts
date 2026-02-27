@@ -18,7 +18,6 @@ export async function POST(req: Request) {
     
     const client = await clerkClient()
 
-    // 1. Check if the user already exists in the instance
     let user;
     try {
         const userList = await client.users.getUserList({ emailAddress: [email] });
@@ -29,21 +28,53 @@ export async function POST(req: Request) {
         console.log("Error checking user existence", e)
     }
 
-    // 2. We rely on the invitation flow.
-    // When the user clicks the link, they will be taken to the Sign Up page to create their account and password.
-    // Once they sign up, they will automatically be added to the organization and appear in the Clerk Dashboard.
+    // Pre-create user if not exists
+    if (!user) {
+        try {
+            console.log(`Creating new user for ${email}...`)
+            const newUser = await client.users.createUser({
+                emailAddress: [email],
+                skipPasswordRequirement: true,
+                publicMetadata: {
+                    role: role // 'org:admin' | 'org:staff' | 'org:parent'
+                }
+            });
+            user = newUser; // Assign to outer variable
+        } catch (e: any) {
+             console.error("Failed to create user automatically:", e)
+             return NextResponse.json({ error: e.errors?.[0]?.message || "Failed to create user" }, { status: 500 })
+        }
+    } else {
+        // Update existing user role
+        await client.users.updateUserMetadata(user.id, {
+            publicMetadata: {
+                role: role
+            }
+        })
+    }
 
-    // Create the invitation
-    const invitation = await client.organizations.createOrganizationInvitation({
-      organizationId: orgId,
-      emailAddress: email,
-      role: role, 
-      inviterUserId: userId, // Track who invited them
-      redirectUrl: (process.env.NEXT_PUBLIC_APP_URL || 'https://bayhood.vercel.app') + '/sign-up', 
-      // Point to our new custom sign-up page
-    })
+    // Still add to organization for compatibility, but mark as "basic_member" or similar if needed
+    // Actually, we can just skip the invitation entirely if we rely on metadata!
+    // But to be safe and use Clerk's UI, we can still add them.
+    // However, the user said "dont want them to have to join".
+    // So let's DIRECTLY add them to the organization if possible.
+    
+    try {
+        await client.organizations.createOrganizationMembership({
+            organizationId: orgId,
+            userId: user.id,
+            role: role === 'org:admin' ? 'org:admin' : 'org:member' 
+            // Note: Clerk roles are limited to admin/member unless custom. 
+            // We map our 'org:staff' / 'org:parent' to 'org:member' + metadata
+        })
+    } catch (e) {
+        // If already member, ignore
+        console.log("User already in org or failed to add", e)
+    }
 
-    return NextResponse.json({ invitation })
+    // We don't need to return an invitation object anymore since we didn't create one.
+    // We just return success.
+    return NextResponse.json({ success: true, message: "User created and added to organization." })
   } catch (error: any) {
     console.error('Error inviting user:', error)
     return NextResponse.json(
