@@ -2,9 +2,9 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
-import { useClerk } from "@clerk/nextjs"
+import { useClerk, useUser } from "@clerk/nextjs"
 import Image from "next/image"
 import { useRouter, useParams } from "next/navigation"
 import { ArrowLeft, ChevronDown, LogOut, Save, User } from "lucide-react"
@@ -58,12 +58,20 @@ const PUPIL_ATTENDANCE_KEY = "pupilAttendance"
 
 export default function EditResult() {
   const { signOut } = useClerk();
+  const { user, isLoaded, isSignedIn } = useUser()
   const router = useRouter()
   const params = useParams()
   const resultId = params.id as string
   
   const [isLoading, setIsLoading] = useState(false)
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  
+  const currentUser = useMemo(() => {
+    if (!user) return null
+    return {
+      role: (user.publicMetadata.role as string) || "admin",
+      email: user.primaryEmailAddress?.emailAddress,
+    }
+  }, [user])
   
   // State for the form
   const [pupilId, setPupilId] = useState("")
@@ -81,28 +89,13 @@ export default function EditResult() {
 
   // Load User and Result
   useEffect(() => {
-    if (typeof window === "undefined") return
-    
-    // 1. Check User
-    const storedUser = window.localStorage.getItem("currentUser")
-    if (!storedUser) {
-      router.push("/login?type=admin")
-      return
-    }
-    try {
-      const parsed = JSON.parse(storedUser) as CurrentUser
-      if (parsed.role !== "admin") {
-        // Only admins can edit via this page
-        router.push("/login?type=admin")
-        return
-      }
-      setCurrentUser(parsed)
-    } catch {
+    if (isLoaded && !isSignedIn) {
       router.push("/login?type=admin")
       return
     }
 
     // 2. Load Result
+    if (typeof window === "undefined") return
     const storedResults = window.localStorage.getItem(RESULTS_STORAGE_KEY)
     let allResults: ResultRecord[] = resultsData
     if (storedResults) {
@@ -152,7 +145,7 @@ export default function EditResult() {
       setScores(initialScores)
     }
 
-  }, [router, resultId])
+  }, [router, resultId, isLoaded, isSignedIn])
 
   const mapClassKeyToLabel = (classKey: string) => {
     if (classKey === "creche") return "Creche"
@@ -203,7 +196,12 @@ export default function EditResult() {
 
     setTimeout(() => {
       if (typeof window !== "undefined") {
-        
+        if (!currentUser) {
+          setIsLoading(false)
+          router.push("/login?type=admin")
+          return
+        }
+
         const stored = window.localStorage.getItem(RESULTS_STORAGE_KEY)
         let current: ResultRecord[] = resultsData
         if (stored) {

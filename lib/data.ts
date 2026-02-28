@@ -17,7 +17,7 @@ export type Pupil = {
 export const pupilsData: Pupil[] = [
   // NURSERY 2
   {
-    id: "BH-N2-001",
+    id: "BPS-001",
     name: "Agboola Jasmine",
     class: "Nursery 2",
     gender: "Female",
@@ -26,7 +26,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2023-09-05",
   },
   {
-    id: "BH-N2-002",
+    id: "BPS-002",
     name: "Ewuzie Angela",
     class: "Nursery 2",
     gender: "Female",
@@ -35,7 +35,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2023-09-05",
   },
   {
-    id: "BH-N2-003",
+    id: "BPS-003",
     name: "Chimezie Dominion",
     class: "Nursery 2",
     gender: "Male",
@@ -44,7 +44,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2023-09-06",
   },
   {
-    id: "BH-N2-004",
+    id: "BPS-004",
     name: "Inegbenose Gerald",
     class: "Nursery 2",
     gender: "Male",
@@ -53,7 +53,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2023-09-06",
   },
   {
-    id: "BH-N2-005",
+    id: "BPS-005",
     name: "Kazeem Iremide",
     class: "Nursery 2",
     gender: "Male",
@@ -62,7 +62,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2023-09-07",
   },
   {
-    id: "BH-N2-006",
+    id: "BPS-006",
     name: "Fakuade Mirabel",
     class: "Nursery 2",
     gender: "Female",
@@ -73,7 +73,7 @@ export const pupilsData: Pupil[] = [
 
   // NURSERY 1
   {
-    id: "BH-N1-001",
+    id: "BPS-007",
     name: "Adebero Ayomide",
     class: "Nursery 1",
     gender: "Female",
@@ -82,7 +82,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2023-09-08",
   },
   {
-    id: "BH-N1-002",
+    id: "BPS-008",
     name: "Adedoyin Jedidah",
     class: "Nursery 1",
     gender: "Female",
@@ -91,7 +91,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2023-09-08",
   },
   {
-    id: "BH-N1-003",
+    id: "BPS-009",
     name: "Adeshida David",
     class: "Nursery 1",
     gender: "Male",
@@ -100,7 +100,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2023-09-09",
   },
   {
-    id: "BH-N1-004",
+    id: "BPS-010",
     name: "Emokpea Louisa",
     class: "Nursery 1",
     gender: "Female",
@@ -109,7 +109,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2023-09-09",
   },
   {
-    id: "BH-N1-005",
+    id: "BPS-011",
     name: "Ohiomah Davina",
     class: "Nursery 1",
     gender: "Female",
@@ -118,7 +118,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2023-09-10",
   },
   {
-    id: "BH-N1-006",
+    id: "BPS-012",
     name: "Akpan Light",
     class: "Nursery 1",
     gender: "Male",
@@ -127,7 +127,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2023-09-10",
   },
   {
-    id: "BH-N1-007",
+    id: "BPS-013",
     name: "Ose-Amen Serahgolden",
     class: "Nursery 1",
     gender: "Female",
@@ -138,7 +138,7 @@ export const pupilsData: Pupil[] = [
 
   // PRESCHOOL 2
   {
-    id: "BH-PS2-002",
+    id: "BPS-014",
     name: "Onafadeji Zemirah",
     class: "Preschool 2",
     gender: "Female",
@@ -147,7 +147,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2024-09-05",
   },
   {
-    id: "BH-PS2-003",
+    id: "BPS-015",
     name: "Popoola Adekiisha",
     class: "Preschool 2",
     gender: "Female",
@@ -156,7 +156,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2024-09-05",
   },
   {
-    id: "BH-PS2-004",
+    id: "BPS-016",
     name: "Kareem Jayden",
     class: "Preschool 2",
     gender: "Male",
@@ -165,7 +165,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2024-09-06",
   },
   {
-    id: "BH-PS2-005",
+    id: "BPS-017",
     name: "Ikejimba Tonia",
     class: "Preschool 2",
     gender: "Female",
@@ -174,7 +174,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2024-09-06",
   },
   {
-    id: "BH-PS2-006",
+    id: "BPS-018",
     name: "Afolabi Ezekiel",
     class: "Preschool 2",
     gender: "Male",
@@ -183,7 +183,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2024-09-07",
   },
   {
-    id: "BH-PS2-007",
+    id: "BPS-019",
     name: "Adeshina Khalid",
     class: "Preschool 2",
     gender: "Male",
@@ -192,7 +192,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2024-09-07",
   },
   {
-    id: "BH-PS2-008",
+    id: "BPS-020",
     name: "George Angel",
     class: "Preschool 2",
     gender: "Female",
@@ -203,7 +203,7 @@ export const pupilsData: Pupil[] = [
 
   // PRESCHOOL 1
   {
-    id: "BH-PS1-001",
+    id: "BPS-021",
     name: "Agboola Anita",
     class: "Preschool 1",
     gender: "Female",
@@ -212,7 +212,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2025-09-05",
   },
   {
-    id: "BH-PS1-002",
+    id: "BPS-022",
     name: "Adeyemo Micah",
     class: "Preschool 1",
     gender: "Male",
@@ -221,7 +221,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2025-09-05",
   },
   {
-    id: "BH-PS1-003",
+    id: "BPS-023",
     name: "Opara Elyon",
     class: "Preschool 1",
     gender: "Female",
@@ -230,7 +230,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2025-09-06",
   },
   {
-    id: "BH-PS1-004",
+    id: "BPS-024",
     name: "Sha Fahiza",
     class: "Preschool 1",
     gender: "Female",
@@ -239,7 +239,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2025-09-06",
   },
   {
-    id: "BH-PS1-005",
+    id: "BPS-025",
     name: "Inegbenose Harry",
     class: "Preschool 1",
     gender: "Male",
@@ -248,7 +248,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2025-09-07",
   },
   {
-    id: "BH-PS1-006",
+    id: "BPS-026",
     name: "Harrison Nathan",
     class: "Preschool 1",
     gender: "Male",
@@ -257,7 +257,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2025-09-07",
   },
   {
-    id: "BH-PS1-007",
+    id: "BPS-027",
     name: "Eke Star",
     class: "Preschool 1",
     gender: "Female",
@@ -266,7 +266,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2025-09-08",
   },
   {
-    id: "BH-PS1-008",
+    id: "BPS-028",
     name: "Agbonyin Hephzibah",
     class: "Preschool 1",
     gender: "Female",
@@ -275,7 +275,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2025-09-08",
   },
   {
-    id: "BH-PS1-009",
+    id: "BPS-029",
     name: "Oguike Joy",
     class: "Preschool 1",
     gender: "Female",
@@ -286,7 +286,7 @@ export const pupilsData: Pupil[] = [
 
   // PLAYGROUP
   {
-    id: "BH-PG-001",
+    id: "BPS-030",
     name: "Fagade Samuel",
     class: "Playgroup",
     gender: "Male",
@@ -295,7 +295,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2025-09-10",
   },
   {
-    id: "BH-PG-002",
+    id: "BPS-031",
     name: "Innocent Jotham",
     class: "Playgroup",
     gender: "Male",
@@ -304,7 +304,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2025-09-10",
   },
   {
-    id: "BH-PG-003",
+    id: "BPS-032",
     name: "Popoola Adekiisha",
     class: "Playgroup",
     gender: "Female",
@@ -313,7 +313,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2025-09-11",
   },
   {
-    id: "BH-PG-004",
+    id: "BPS-033",
     name: "Ayotunde Nabeel",
     class: "Playgroup",
     gender: "Male",
@@ -322,7 +322,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2025-09-11",
   },
   {
-    id: "BH-PG-005",
+    id: "BPS-034",
     name: "Okonkwo Marvelous",
     class: "Playgroup",
     gender: "Male",
@@ -331,7 +331,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2025-09-12",
   },
   {
-    id: "BH-PG-006",
+    id: "BPS-035",
     name: "Jejeola Diadem",
     class: "Playgroup",
     gender: "Female",
@@ -340,7 +340,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2025-09-12",
   },
   {
-    id: "BH-PG-007",
+    id: "BPS-036",
     name: "Odunsanya Valera",
     class: "Playgroup",
     gender: "Female",
@@ -349,7 +349,7 @@ export const pupilsData: Pupil[] = [
     enrollmentDate: "2025-09-13",
   },
   {
-    id: "BH-PG-008",
+    id: "BPS-037",
     name: "Lamidi Zoey",
     class: "Playgroup",
     gender: "Female",
@@ -452,7 +452,7 @@ export type ResultRecord = {
 export const resultsData: ResultRecord[] = [
   {
     id: "R001",
-    pupilId: "BH-N2-001",
+    pupilId: "BPS-001",
     pupilName: "Agboola Jasmine",
     class: "Nursery 2",
     term: "Term 2",
@@ -463,7 +463,7 @@ export const resultsData: ResultRecord[] = [
   },
   {
     id: "R002",
-    pupilId: "BH-N1-002",
+    pupilId: "BPS-008",
     pupilName: "Adedoyin Jedidah",
     class: "Nursery 1",
     term: "Term 2",
@@ -474,7 +474,7 @@ export const resultsData: ResultRecord[] = [
   },
   {
     id: "R003",
-    pupilId: "BH-PS2-004",
+    pupilId: "BPS-016",
     pupilName: "Kareem Jayden",
     class: "Preschool 2",
     term: "Term 2",
@@ -485,7 +485,7 @@ export const resultsData: ResultRecord[] = [
   },
   {
     id: "R004",
-    pupilId: "BH-N2-006",
+    pupilId: "BPS-006",
     pupilName: "Fakuade Mirabel",
     class: "Nursery 2",
     term: "Term 2",
@@ -496,7 +496,7 @@ export const resultsData: ResultRecord[] = [
   },
   {
     id: "R005",
-    pupilId: "BH-N1-005",
+    pupilId: "BPS-011",
     pupilName: "Ohiomah Davina",
     class: "Nursery 1",
     term: "Term 2",

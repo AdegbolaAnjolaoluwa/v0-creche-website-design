@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
-import { useClerk } from "@clerk/nextjs"
+import { useClerk, useUser } from "@clerk/nextjs"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Calendar, Check, ChevronDown, Clock, Home, LogOut, Plus, User, X } from "lucide-react"
+import { ArrowLeft, Banknote, Check, ChevronDown, Clock, Home, LogOut, Plus, User, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -39,67 +38,62 @@ type CurrentUser = {
   classId?: string
 }
 
-type LeaveRequest = {
+type LoanRequest = {
   id: string
   staffEmail: string
-  startDate: string
-  endDate: string
-  type: "Sick" | "Vacation" | "Emergency" | "Other"
+  amount: number
   reason: string
+  repaymentPlan: string
   status: "Pending" | "Approved" | "Rejected"
   createdAt: string
   adminComment?: string
 }
 
-const LEAVE_REQUESTS_KEY = "staffLeaveRequests"
+const LOAN_REQUESTS_KEY = "staffLoanRequests"
 
-export default function StaffLeavePage() {
+export default function StaffLoanPage() {
   const { signOut } = useClerk();
+  const { user, isLoaded, isSignedIn } = useUser()
   const router = useRouter()
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([])
+  
+  const currentUser = useMemo(() => {
+    if (!user) return null
+    return {
+      role: (user.publicMetadata.role as string) || "staff",
+      email: user.primaryEmailAddress?.emailAddress,
+      classId: (user.publicMetadata.classId as string)
+    }
+  }, [user])
+
+  const [loanRequests, setLoanRequests] = useState<LoanRequest[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   
   // Form State
-  const [startDate, setStartDate] = useState("")
-  const [endDate, setEndDate] = useState("")
-  const [leaveType, setLeaveType] = useState<string>("")
+  const [amount, setAmount] = useState<string>("")
   const [reason, setReason] = useState("")
+  const [repaymentPlan, setRepaymentPlan] = useState("")
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push("/login?type=staff")
+    }
+  }, [isLoaded, isSignedIn, router])
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    const storedUser = window.localStorage.getItem("currentUser")
-    if (!storedUser) {
-      router.push("/login?type=staff")
-      return
-    }
-    try {
-      const parsed = JSON.parse(storedUser) as CurrentUser
-      if (parsed.role !== "staff") {
-        router.push("/login?type=staff")
-        return
-      }
-      setCurrentUser(parsed)
-    } catch {
-      router.push("/login?type=staff")
-    }
-  }, [router])
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const stored = window.localStorage.getItem(LEAVE_REQUESTS_KEY)
+    const stored = window.localStorage.getItem(LOAN_REQUESTS_KEY)
     if (stored) {
       try {
-        const parsed = JSON.parse(stored) as LeaveRequest[]
-        setLeaveRequests(parsed)
+        const parsed = JSON.parse(stored) as LoanRequest[]
+        setLoanRequests(parsed)
       } catch {
-        setLeaveRequests([])
+        setLoanRequests([])
       }
     }
   }, [])
 
-  const myRequests = leaveRequests
+  const myRequests = loanRequests
     .filter((req) => req.staffEmail === currentUser?.email)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
@@ -110,36 +104,34 @@ export default function StaffLeavePage() {
     setIsSubmitting(true)
     
     setTimeout(() => {
-      const newRequest: LeaveRequest = {
-        id: `LR-${Date.now()}`,
+      const newRequest: LoanRequest = {
+        id: `LN-${Date.now()}`,
         staffEmail: currentUser.email!,
-        startDate,
-        endDate,
-        type: leaveType as any,
+        amount: parseFloat(amount),
         reason,
+        repaymentPlan,
         status: "Pending",
         createdAt: new Date().toISOString()
       }
       
-      const updated = [...leaveRequests, newRequest]
-      setLeaveRequests(updated)
-      window.localStorage.setItem(LEAVE_REQUESTS_KEY, JSON.stringify(updated))
+      const updated = [newRequest, ...loanRequests]
+      setLoanRequests(updated)
+      window.localStorage.setItem(LOAN_REQUESTS_KEY, JSON.stringify(updated))
       
       setIsSubmitting(false)
       setIsDialogOpen(false)
       
       // Reset form
-      setStartDate("")
-      setEndDate("")
-      setLeaveType("")
+      setAmount("")
       setReason("")
+      setRepaymentPlan("")
     }, 1000)
   }
 
   const handleLogout = () => { signOut(() => { router.push("/login") }) }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-slate-50/50">
       <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
         <div className="flex items-center gap-2">
           <Link href="/staff/dashboard" className="flex items-center gap-2 font-semibold">
@@ -182,8 +174,8 @@ export default function StaffLeavePage() {
               </Link>
             </Button>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Leave Management</h1>
-              <p className="text-muted-foreground">Request time off and track your application status.</p>
+              <h1 className="text-2xl font-bold tracking-tight">Loan Management</h1>
+              <p className="text-muted-foreground">Apply for loans and track your application status.</p>
             </div>
           </div>
           
@@ -191,58 +183,44 @@ export default function StaffLeavePage() {
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                New Request
+                New Loan Request
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Request Leave</DialogTitle>
-                <DialogDescription>Fill in the details for your leave request.</DialogDescription>
+                <DialogTitle>Request Loan</DialogTitle>
+                <DialogDescription>Enter the details for your loan request.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="start-date">Start Date</Label>
-                    <Input 
-                      id="start-date" 
-                      type="date" 
-                      required 
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="end-date">End Date</Label>
-                    <Input 
-                      id="end-date" 
-                      type="date" 
-                      required 
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Loan Amount (₦)</Label>
+                  <Input 
+                    id="amount" 
+                    type="number" 
+                    min="1"
+                    placeholder="e.g. 50000"
+                    required 
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                  />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="type">Leave Type</Label>
-                  <Select required value={leaveType} onValueChange={setLeaveType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Sick">Sick Leave</SelectItem>
-                      <SelectItem value="Vacation">Vacation</SelectItem>
-                      <SelectItem value="Emergency">Emergency</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="repayment">Repayment Plan</Label>
+                  <Input 
+                    id="repayment" 
+                    placeholder="e.g. Deduct ₦10,000 from salary for 5 months" 
+                    required 
+                    value={repaymentPlan}
+                    onChange={(e) => setRepaymentPlan(e.target.value)}
+                  />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="reason">Reason</Label>
+                  <Label htmlFor="reason">Reason for Loan</Label>
                   <Textarea 
                     id="reason" 
-                    placeholder="Briefly explain why you need leave..." 
+                    placeholder="Briefly explain why you need this loan..." 
                     required 
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
@@ -295,21 +273,21 @@ export default function StaffLeavePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>My Leave History</CardTitle>
-            <CardDescription>A history of all your leave requests.</CardDescription>
+            <CardTitle>My Loan History</CardTitle>
+            <CardDescription>A history of all your loan applications.</CardDescription>
           </CardHeader>
           <CardContent>
             {myRequests.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No leave requests found. Create one to get started.
+                No loan requests found. Apply for one to get started.
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date Requested</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Duration</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Repayment Plan</TableHead>
                     <TableHead>Reason</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Admin Comment</TableHead>
@@ -319,14 +297,11 @@ export default function StaffLeavePage() {
                   {myRequests.map((req) => (
                     <TableRow key={req.id}>
                       <TableCell>{new Date(req.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{req.type}</Badge>
+                      <TableCell className="font-medium">
+                        ₦{req.amount.toLocaleString()}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col text-xs">
-                           <span>From: {req.startDate}</span>
-                           <span>To: {req.endDate}</span>
-                        </div>
+                      <TableCell className="max-w-[200px] truncate" title={req.repaymentPlan}>
+                         {req.repaymentPlan}
                       </TableCell>
                       <TableCell className="max-w-[200px] truncate" title={req.reason}>
                         {req.reason}

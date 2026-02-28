@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useClerk } from "@clerk/nextjs"
+import { useClerk, useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { BookOpen, Calendar, ChevronDown, Edit, Filter, Home, Trash, User, Users } from "lucide-react"
 
@@ -65,9 +65,18 @@ const PUPIL_ATTENDANCE_KEY = "pupilAttendance"
 const DAILY_REPORTS_KEY = "dailyReports"
 
 export default function AdminAttendancePage() {
-  const { signOut } = useClerk();
+  const { signOut } = useClerk()
+  const { user, isLoaded, isSignedIn } = useUser()
   const router = useRouter()
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  
+  const currentUser = useMemo(() => {
+    if (!user) return null
+    return {
+      role: (user.publicMetadata.role as string) || "admin",
+      email: user.primaryEmailAddress?.emailAddress,
+    }
+  }, [user])
+
   const [staffAttendance, setStaffAttendance] = useState<StaffAttendanceRecord[]>([])
   const [pupilAttendance, setPupilAttendance] = useState<PupilAttendanceRecord[]>([])
   const [filterDate, setFilterDate] = useState("")
@@ -78,54 +87,49 @@ export default function AdminAttendancePage() {
   const [dailyReports, setDailyReports] = useState<DailyReport[]>([])
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const storedUser = window.localStorage.getItem("currentUser")
-    if (!storedUser) {
-      router.push("/login?type=admin")
-      return
-    }
-    try {
-      const parsed = JSON.parse(storedUser) as CurrentUser
-      if (parsed.role !== "admin") {
-        router.push("/login?type=admin")
-        return
-      }
-      setCurrentUser(parsed)
-    } catch {
+    if (isLoaded && !isSignedIn) {
       router.push("/login?type=admin")
     }
-  }, [router])
+  }, [isLoaded, isSignedIn, router])
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const storedStaff = window.localStorage.getItem(STAFF_ATTENDANCE_KEY)
-    const storedPupil = window.localStorage.getItem(PUPIL_ATTENDANCE_KEY)
-    const storedReports = window.localStorage.getItem(DAILY_REPORTS_KEY)
-    if (storedStaff) {
-      try {
-        const parsed = JSON.parse(storedStaff) as StaffAttendanceRecord[]
-        setStaffAttendance(parsed)
-      } catch {
-        setStaffAttendance([])
-      }
-    }
-    if (storedPupil) {
-      try {
-        const parsed = JSON.parse(storedPupil) as PupilAttendanceRecord[]
-        setPupilAttendance(parsed)
-      } catch {
-        setPupilAttendance([])
-      }
-    }
-    if (storedReports) {
-      try {
-        const parsed = JSON.parse(storedReports) as DailyReport[]
-        setDailyReports(parsed)
-      } catch {
-        setDailyReports([])
-      }
-    }
+    fetchAttendance()
   }, [])
+
+  const fetchAttendance = async () => {
+    try {
+      // Fetch pupil attendance from new API
+      const res = await fetch("/api/admin/attendance")
+      if (res.ok) {
+        const data = await res.json()
+        const mapped = data.map((r: any) => ({
+            ...r,
+            pupilId: r.studentId,
+            time: new Date(r.timestamp).toLocaleTimeString()
+        }))
+        setPupilAttendance(mapped)
+      }
+      
+      // Keep other localStorage for now until migrated
+      if (typeof window !== "undefined") {
+        const storedStaff = window.localStorage.getItem(STAFF_ATTENDANCE_KEY)
+        const storedReports = window.localStorage.getItem(DAILY_REPORTS_KEY)
+        
+        if (storedStaff) {
+          try {
+            setStaffAttendance(JSON.parse(storedStaff))
+          } catch {}
+        }
+        if (storedReports) {
+          try {
+            setDailyReports(JSON.parse(storedReports))
+          } catch {}
+        }
+      }
+    } catch (e) {
+      console.error("Failed to fetch attendance", e)
+    }
+  }
 
   const filteredPupilAttendance = useMemo(() => {
     return pupilAttendance.filter((record) => {
@@ -411,6 +415,13 @@ export default function AdminAttendancePage() {
             >
               <BookOpen className="h-4 w-4" />
               Daily Reports
+            </Link>
+            <Link
+              href="/admin/loan"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+            >
+              <Calendar className="h-4 w-4" />
+              Staff Loan
             </Link>
             <Link
               href="/admin/settings"

@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useClerk } from "@clerk/nextjs"
+import { useClerk, useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, BookOpen, Check, ChevronDown, Home, LogOut, Menu, User, Users, X } from "lucide-react"
+import { ArrowLeft, Banknote, BookOpen, Check, ChevronDown, Home, LogOut, Menu, User, Users, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -49,32 +49,29 @@ function formatTime(date: Date) {
 }
 
 export default function ClassAttendancePage() {
+  const { user, isLoaded, isSignedIn } = useUser()
   const { signOut } = useClerk();
   const router = useRouter()
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  
+  const currentUser = useMemo(() => {
+    if (!user) return null
+    return {
+      role: (user.publicMetadata.role as string) || "staff",
+      email: user.primaryEmailAddress?.emailAddress,
+      classId: (user.publicMetadata.classId as string)
+    }
+  }, [user])
+
   const [pupilAttendance, setPupilAttendance] = useState<PupilAttendanceRecord[]>([])
   const [todayStatuses, setTodayStatuses] = useState<Record<string, PupilAttendanceRecord["status"]>>({})
   const [isSavingAttendance, setIsSavingAttendance] = useState(false)
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const storedUser = window.localStorage.getItem("currentUser")
-    if (!storedUser) {
-      router.push("/login?type=staff")
-      return
-    }
-    try {
-      const parsed = JSON.parse(storedUser) as CurrentUser
-      if (parsed.role !== "staff" || !parsed.classId) {
-        router.push("/login?type=staff")
-        return
-      }
-      setCurrentUser(parsed)
-    } catch {
+    if (isLoaded && !isSignedIn) {
       router.push("/login?type=staff")
     }
-  }, [router])
+  }, [isLoaded, isSignedIn, router])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -162,7 +159,7 @@ export default function ClassAttendancePage() {
     setIsSavingAttendance(false)
   }
 
-  const handleLogout = () => { signOut(() => { router.push("/login") }) }
+  const handleLogout = () => { signOut(() => { router.push("/login?type=staff") }) }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -222,6 +219,14 @@ export default function ClassAttendancePage() {
                   <BookOpen className="h-5 w-5" />
                   Daily Report
                 </Link>
+                <Link
+                  href="/staff/loan"
+                  className="flex items-center gap-2"
+                  onClick={() => setIsMobileNavOpen(false)}
+                >
+                  <Banknote className="h-5 w-5" />
+                  Loan Request
+                </Link>
               </div>
             </nav>
           </SheetContent>
@@ -253,6 +258,12 @@ export default function ClassAttendancePage() {
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
             </DropdownMenuItem>
+            <Link href="/staff/loan">
+              <DropdownMenuItem>
+                <Banknote className="mr-2 h-4 w-4" />
+                <span>Loan Request</span>
+              </DropdownMenuItem>
+            </Link>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Protect, SignOutButton } from "@clerk/nextjs"
@@ -65,14 +65,13 @@ type DailyReport = {
 const RESULTS_STORAGE_KEY = "adminResults"
 const PUPIL_ATTENDANCE_KEY = "pupilAttendance"
 const DAILY_REPORTS_KEY = "dailyReports"
-const LEAVE_REQUESTS_KEY = "staffLeaveRequests"
+const LOAN_REQUESTS_KEY = "staffLoanRequests"
 
-type LeaveRequest = {
+type LoanRequest = {
   id: string
   staffEmail: string
-  startDate: string
-  endDate: string
-  type: "Sick" | "Vacation" | "Emergency" | "Other"
+  amount: number
+  repaymentPlan: string
   reason: string
   status: "Pending" | "Approved" | "Rejected"
   createdAt: string
@@ -127,12 +126,12 @@ const loadDailyReportsFromStorage = (): DailyReport[] => {
   }
 }
 
-const loadLeaveRequestsFromStorage = (): LeaveRequest[] => {
+const loadLoanRequestsFromStorage = (): LoanRequest[] => {
   if (typeof window === "undefined") return []
-  const stored = window.localStorage.getItem(LEAVE_REQUESTS_KEY)
+  const stored = window.localStorage.getItem(LOAN_REQUESTS_KEY)
   if (!stored) return []
   try {
-    const parsed = JSON.parse(stored) as LeaveRequest[]
+    const parsed = JSON.parse(stored) as LoanRequest[]
     if (!Array.isArray(parsed)) {
       return []
     }
@@ -148,7 +147,7 @@ export default function AdminDashboard() {
   const [results] = useState<ResultRecord[]>(() => loadResultsFromStorage())
   const [pupilAttendance] = useState<PupilAttendanceRecord[]>(() => loadPupilAttendanceFromStorage())
   const [dailyReports] = useState<DailyReport[]>(() => loadDailyReportsFromStorage())
-  const [leaveRequests] = useState<LeaveRequest[]>(() => loadLeaveRequestsFromStorage())
+  const [loanRequests] = useState<LoanRequest[]>(() => loadLoanRequestsFromStorage())
 
   const totalPupils = pupilsData.length
   const totalClasses = classesData.length
@@ -362,12 +361,12 @@ export default function AdminDashboard() {
     [dailyReports],
   )
   
-  const leaveAnalytics = useMemo(() => {
+  const loanAnalytics = useMemo(() => {
     return {
-      pending: leaveRequests.filter(r => r.status === "Pending").length,
-      total: leaveRequests.length
+      pending: loanRequests.filter(r => r.status === "Pending").length,
+      total: loanRequests.length
     }
-  }, [leaveRequests])
+  }, [loanRequests])
 
   const recentResults = useMemo(
     () =>
@@ -567,11 +566,11 @@ export default function AdminDashboard() {
               Settings
             </Link>
             <Link
-              href="/admin/leave"
+              href="/admin/loan"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
             >
               <Calendar className="h-4 w-4" />
-              Staff Leave
+              Staff Loan
             </Link>
           </nav>
         </aside>
@@ -662,13 +661,13 @@ export default function AdminDashboard() {
                 </Card>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Leave Requests</CardTitle>
+                    <CardTitle className="text-sm font-medium">Loan Requests</CardTitle>
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{leaveAnalytics.pending}</div>
+                    <div className="text-2xl font-bold">{loanAnalytics.pending}</div>
                     <p className="text-xs text-muted-foreground">
-                      Pending approval ({leaveAnalytics.total} total)
+                      Pending approval ({loanAnalytics.total} total)
                     </p>
                   </CardContent>
                 </Card>

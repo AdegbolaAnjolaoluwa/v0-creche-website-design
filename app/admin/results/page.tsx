@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { BookOpen, ChevronDown, Download, FileText, Filter, Search, User, Users, Edit } from "lucide-react"
+import { BookOpen, Calendar, ChevronDown, Download, FileText, Filter, Search, User, Users, Edit } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -68,7 +68,31 @@ export const calculateAttendanceScore = (attendancePercentage: number) => {
 export const calculateFinalScore = (academicScore: number, attendanceScore: number) => academicScore + attendanceScore
 
 export default function ResultsPage() {
-  const [results, setResults] = useState<ResultRecord[]>(() => loadResultsFromStorage())
+  const [results, setResults] = useState<ResultRecord[]>([])
+  
+  useEffect(() => {
+    fetchResults()
+  }, [])
+
+  const fetchResults = async () => {
+    try {
+      const res = await fetch("/api/admin/results")
+      if (res.ok) {
+        const data = await res.json()
+        const mapped = data.map((r: any) => ({
+            ...r,
+            class: r.classId, // Map classId to class
+            pupilName: r.studentName, // Map studentName to pupilName
+            pupilId: r.studentId, // Map studentId to pupilId
+            date: new Date(r.updatedAt).toISOString().split('T')[0] // Format date
+        }))
+        setResults(mapped)
+      }
+    } catch (e) {
+      console.error("Failed to fetch results", e)
+    }
+  }
+
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedClass, setSelectedClass] = useState("all")
   const [selectedTerm, setSelectedTerm] = useState("all")
@@ -240,6 +264,13 @@ export default function ResultsPage() {
             >
               <BookOpen className="h-4 w-4" />
               Daily Reports
+            </Link>
+            <Link
+              href="/admin/loan"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+            >
+              <Calendar className="h-4 w-4" />
+              Staff Loan
             </Link>
             <Link
               href="/admin/settings"

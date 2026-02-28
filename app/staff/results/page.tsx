@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useClerk } from "@clerk/nextjs"
+import { useClerk, useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, ChevronDown, FileText, Filter, Search, User } from "lucide-react"
+import { ArrowLeft, Banknote, ChevronDown, FileText, Filter, LogOut, Search, User, Users } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -56,34 +56,32 @@ const loadResultsFromStorage = (): ResultRecord[] => {
 }
 
 export default function StaffResultsPage() {
-  const { signOut } = useClerk();
+  const { signOut } = useClerk()
+  const { user, isLoaded, isSignedIn } = useUser()
   const router = useRouter()
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  
+  const currentUser = useMemo(() => {
+    if (!user) return null
+    return {
+      role: (user.publicMetadata.role as string) || "staff",
+      email: user.primaryEmailAddress?.emailAddress,
+      classId: (user.publicMetadata.classId as string)
+    }
+  }, [user])
+
   const [results, setResults] = useState<ResultRecord[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedTerm, setSelectedTerm] = useState("all")
   const [selectedStatus, setSelectedStatus] = useState("all")
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const storedUser = window.localStorage.getItem("currentUser")
-    if (!storedUser) {
+    if (isLoaded && !isSignedIn) {
       router.push("/login?type=staff")
       return
     }
-    try {
-      const parsed = JSON.parse(storedUser) as CurrentUser
-      if (parsed.role !== "staff" || !parsed.classId) {
-        router.push("/login?type=staff")
-        return
-      }
-      setCurrentUser(parsed)
-      const loaded = loadResultsFromStorage()
-      setResults(loaded)
-    } catch {
-      router.push("/login?type=staff")
-    }
-  }, [router])
+    const loaded = loadResultsFromStorage()
+    setResults(loaded)
+  }, [isLoaded, isSignedIn, router])
 
   const assignedClassName = useMemo(() => {
     if (!currentUser) return null
@@ -109,7 +107,7 @@ export default function StaffResultsPage() {
     })
   }, [results, assignedClassName, searchTerm, selectedTerm, selectedStatus])
 
-  const handleLogout = () => { signOut(() => { router.push("/login") }) }
+  const handleLogout = () => { signOut(() => { router.push("/login?type=staff") }) }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -137,7 +135,25 @@ export default function StaffResultsPage() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <User className="mr-2 h-4 w-4" />
+              <span>Profile</span>
+            </DropdownMenuItem>
+            <Link href="/staff/loan">
+              <DropdownMenuItem>
+                <Banknote className="mr-2 h-4 w-4" />
+                <span>Loan Request</span>
+              </DropdownMenuItem>
+            </Link>
+            <Link href="/staff/pupils">
+              <DropdownMenuItem>
+                <Users className="mr-2 h-4 w-4" />
+                <span>My Pupils</span>
+              </DropdownMenuItem>
+            </Link>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

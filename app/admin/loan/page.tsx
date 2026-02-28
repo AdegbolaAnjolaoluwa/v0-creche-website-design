@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
-import { useClerk } from "@clerk/nextjs"
+import { useClerk, useUser } from "@clerk/nextjs"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Check, ChevronDown, Clock, Filter, Home, LogOut, Search, User, X } from "lucide-react"
@@ -38,76 +38,70 @@ type CurrentUser = {
   email?: string
 }
 
-type LeaveRequest = {
+type LoanRequest = {
   id: string
   staffEmail: string
-  startDate: string
-  endDate: string
-  type: "Sick" | "Vacation" | "Emergency" | "Other"
+  amount: number
   reason: string
+  repaymentPlan: string
   status: "Pending" | "Approved" | "Rejected"
   createdAt: string
   adminComment?: string
 }
 
-const LEAVE_REQUESTS_KEY = "staffLeaveRequests"
+const LOAN_REQUESTS_KEY = "staffLoanRequests"
 
-export default function AdminLeavePage() {
-  const { signOut } = useClerk();
+export default function AdminLoanPage() {
+  const { signOut } = useClerk()
+  const { user, isLoaded, isSignedIn } = useUser()
   const router = useRouter()
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([])
+
+  const currentUser = useMemo(() => {
+    if (!user) return null
+    return {
+      role: (user.publicMetadata.role as string) || "admin",
+      email: user.primaryEmailAddress?.emailAddress,
+    }
+  }, [user])
+
+  const [loanRequests, setLoanRequests] = useState<LoanRequest[]>([])
   const [filterStatus, setFilterStatus] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   
   // Action Dialog State
-  const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null)
+  const [selectedRequest, setSelectedRequest] = useState<LoanRequest | null>(null)
   const [adminComment, setAdminComment] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [actionType, setActionType] = useState<"Approve" | "Reject" | null>(null)
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const storedUser = window.localStorage.getItem("currentUser")
-    if (!storedUser) {
-      router.push("/login?type=admin")
-      return
-    }
-    try {
-      const parsed = JSON.parse(storedUser) as CurrentUser
-      if (parsed.role !== "admin") {
-        router.push("/login?type=admin")
-        return
-      }
-      setCurrentUser(parsed)
-    } catch {
+    if (isLoaded && !isSignedIn) {
       router.push("/login?type=admin")
     }
-  }, [router])
+  }, [isLoaded, isSignedIn, router])
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    const stored = window.localStorage.getItem(LEAVE_REQUESTS_KEY)
+    const stored = window.localStorage.getItem(LOAN_REQUESTS_KEY)
     if (stored) {
       try {
-        const parsed = JSON.parse(stored) as LeaveRequest[]
-        setLeaveRequests(parsed)
+        const parsed = JSON.parse(stored) as LoanRequest[]
+        setLoanRequests(parsed)
       } catch {
-        setLeaveRequests([])
+        setLoanRequests([])
       }
     }
   }, [])
 
-  const filteredRequests = leaveRequests
+  const filteredRequests = loanRequests
     .filter((req) => {
       const matchesStatus = filterStatus === "all" || req.status === filterStatus
-      const matchesSearch = req.staffEmail.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            req.type.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesSearch = req.staffEmail.toLowerCase().includes(searchTerm.toLowerCase())
       return matchesStatus && matchesSearch
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
-  const handleAction = (request: LeaveRequest, type: "Approve" | "Reject") => {
+  const handleAction = (request: LoanRequest, type: "Approve" | "Reject") => {
     setSelectedRequest(request)
     setActionType(type)
     setAdminComment("")
@@ -117,19 +111,19 @@ export default function AdminLeavePage() {
   const confirmAction = () => {
     if (!selectedRequest || !actionType) return
 
-    const updatedRequests = leaveRequests.map(req => {
+    const updatedRequests = loanRequests.map(req => {
       if (req.id === selectedRequest.id) {
         return {
           ...req,
           status: actionType === "Approve" ? "Approved" : "Rejected",
           adminComment: adminComment
-        } as LeaveRequest
+        } as LoanRequest
       }
       return req
     })
 
-    setLeaveRequests(updatedRequests)
-    window.localStorage.setItem(LEAVE_REQUESTS_KEY, JSON.stringify(updatedRequests))
+    setLoanRequests(updatedRequests)
+    window.localStorage.setItem(LOAN_REQUESTS_KEY, JSON.stringify(updatedRequests))
     setIsDialogOpen(false)
     setSelectedRequest(null)
     setActionType(null)
@@ -181,8 +175,8 @@ export default function AdminLeavePage() {
               </Link>
             </Button>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Staff Leave Management</h1>
-              <p className="text-muted-foreground">Review and manage staff leave requests.</p>
+              <h1 className="text-2xl font-bold tracking-tight">Staff Loan Management</h1>
+              <p className="text-muted-foreground">Review and manage staff loan requests.</p>
             </div>
           </div>
         </div>
@@ -191,7 +185,7 @@ export default function AdminLeavePage() {
           <div className="flex items-center gap-2 flex-1">
              <Search className="h-4 w-4 text-muted-foreground" />
              <Input 
-               placeholder="Search by email or type..." 
+               placeholder="Search by email..." 
                value={searchTerm}
                onChange={(e) => setSearchTerm(e.target.value)}
                className="max-w-sm"
@@ -212,7 +206,7 @@ export default function AdminLeavePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Leave Requests</CardTitle>
+            <CardTitle>Loan Requests</CardTitle>
             <CardDescription>
               {filteredRequests.length} request(s) found.
             </CardDescription>
@@ -220,7 +214,7 @@ export default function AdminLeavePage() {
           <CardContent>
             {filteredRequests.length === 0 ? (
                <div className="text-center py-12 text-muted-foreground">
-                 No leave requests found matching your criteria.
+                 No loan requests found matching your criteria.
                </div>
             ) : (
               <Table>
@@ -228,8 +222,8 @@ export default function AdminLeavePage() {
                   <TableRow>
                     <TableHead>Staff Email</TableHead>
                     <TableHead>Date Requested</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>Type</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Repayment Plan</TableHead>
                     <TableHead>Reason</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -240,15 +234,11 @@ export default function AdminLeavePage() {
                     <TableRow key={req.id}>
                       <TableCell className="font-medium">{req.staffEmail}</TableCell>
                       <TableCell>{new Date(req.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col text-xs">
-                          <span>{req.startDate}</span>
-                          <span className="text-muted-foreground">to</span>
-                          <span>{req.endDate}</span>
-                        </div>
+                      <TableCell className="font-medium">
+                        ₦{req.amount.toLocaleString()}
                       </TableCell>
-                      <TableCell>
-                         <Badge variant="outline">{req.type}</Badge>
+                      <TableCell className="max-w-[200px] truncate" title={req.repaymentPlan}>
+                         {req.repaymentPlan}
                       </TableCell>
                       <TableCell className="max-w-[200px] truncate" title={req.reason}>
                         {req.reason}
@@ -293,7 +283,7 @@ export default function AdminLeavePage() {
             <DialogHeader>
               <DialogTitle>{actionType} Request</DialogTitle>
               <DialogDescription>
-                Are you sure you want to {actionType?.toLowerCase()} this request from {selectedRequest?.staffEmail}?
+                Are you sure you want to {actionType?.toLowerCase()} this loan request from {selectedRequest?.staffEmail}?
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-2">

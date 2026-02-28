@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useClerk } from "@clerk/nextjs"
+import { useClerk, useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { ArrowRight, BarChart3, BookOpen, Check, ChevronDown, GraduationCap, Home, LogOut, Menu, User, Users, X, Calendar } from "lucide-react"
+import { ArrowRight, BarChart3, BookOpen, Check, ChevronDown, GraduationCap, Home, LogOut, Menu, User, Users, X, Banknote } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -62,9 +62,9 @@ type DailyReport = {
 const STAFF_ATTENDANCE_KEY = "staffAttendance"
 const PUPIL_ATTENDANCE_KEY = "pupilAttendance"
 const DAILY_REPORTS_KEY = "dailyReports"
-const LEAVE_REQUESTS_KEY = "staffLeaveRequests"
+const LOAN_REQUESTS_KEY = "staffLoanRequests"
 
-type LeaveRequest = {
+type LoanRequest = {
   id: string
   staffEmail: string
   status: "Pending" | "Approved" | "Rejected"
@@ -88,49 +88,38 @@ function isAfterSignInCutoff() {
 }
 
 export default function StaffDashboard() {
-  const { signOut } = useClerk();
+  const { signOut } = useClerk()
+  const { user, isLoaded, isSignedIn } = useUser()
   const router = useRouter()
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  
+  // Computed current user state from Clerk
+  const currentUser = useMemo(() => {
+    if (!user) return null
+    return {
+      role: (user.publicMetadata.role as string) || "staff",
+      email: user.primaryEmailAddress?.emailAddress,
+      classId: (user.publicMetadata.classId as string)
+    }
+  }, [user])
+
   const [staffAttendance, setStaffAttendance] = useState<StaffAttendanceRecord[]>([])
   const [pupilAttendance, setPupilAttendance] = useState<PupilAttendanceRecord[]>([])
-  const [todayStatuses, setTodayStatuses] = useState<Record<string, PupilAttendanceRecord["status"]>>({})
-  const [isSigningIn, setIsSigningIn] = useState(false)
-  const [isSavingAttendance, setIsSavingAttendance] = useState(false)
   const [dailyReports, setDailyReports] = useState<DailyReport[]>([])
-  const [reportTopicsTaught, setReportTopicsTaught] = useState("")
-  const [reportActivitiesDone, setReportActivitiesDone] = useState("")
-  const [reportBehaviourNotes, setReportBehaviourNotes] = useState("")
-  const [reportHomework, setReportHomework] = useState("")
-  const [reportGeneralComment, setReportGeneralComment] = useState("")
-  const [isSavingReport, setIsSavingReport] = useState(false)
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([])
+  const [loanRequests, setLoanRequests] = useState<LoanRequest[]>([])
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const storedUser = window.localStorage.getItem("currentUser")
-    if (!storedUser) {
-      router.push("/login?type=staff")
-      return
-    }
-    try {
-      const parsed = JSON.parse(storedUser) as CurrentUser
-      if (parsed.role !== "staff" || !parsed.classId) {
-        router.push("/login?type=staff")
-        return
-      }
-      setCurrentUser(parsed)
-    } catch {
+    if (isLoaded && !isSignedIn) {
       router.push("/login?type=staff")
     }
-  }, [router])
+  }, [isLoaded, isSignedIn, router])
 
   useEffect(() => {
     if (typeof window === "undefined") return
     const storedStaff = window.localStorage.getItem(STAFF_ATTENDANCE_KEY)
     const storedPupil = window.localStorage.getItem(PUPIL_ATTENDANCE_KEY)
     const storedReports = window.localStorage.getItem(DAILY_REPORTS_KEY)
-    const storedLeave = window.localStorage.getItem(LEAVE_REQUESTS_KEY)
+    const storedLoan = window.localStorage.getItem(LOAN_REQUESTS_KEY)
     if (storedStaff) {
       try {
         const parsed = JSON.parse(storedStaff) as StaffAttendanceRecord[]
@@ -155,28 +144,15 @@ export default function StaffDashboard() {
         setDailyReports([])
       }
     }
-    if (storedLeave) {
+    if (storedLoan) {
       try {
-        const parsed = JSON.parse(storedLeave) as LeaveRequest[]
-        setLeaveRequests(parsed)
+        const parsed = JSON.parse(storedLoan) as LoanRequest[]
+        setLoanRequests(parsed)
       } catch {
-        setLeaveRequests([])
+        setLoanRequests([])
       }
     }
   }, [])
-
-  useEffect(() => {
-    if (!currentUser) return
-    const today = formatDate(new Date())
-    const todaysRecords = pupilAttendance.filter(
-      (record) => record.classId === currentUser.classId && record.date === today && record.staffEmail === currentUser.email,
-    )
-    const map: Record<string, PupilAttendanceRecord["status"]> = {}
-    todaysRecords.forEach((record) => {
-      map[record.pupilId] = record.status
-    })
-    setTodayStatuses(map)
-  }, [currentUser, pupilAttendance])
 
   const assignedClass = useMemo(
     () => classesData.find((cls) => cls.id === currentUser?.classId),
@@ -188,49 +164,18 @@ export default function StaffDashboard() {
     return pupilsData.filter((pupil) => pupil.class === assignedClass.name)
   }, [assignedClass])
 
-  const todayStaffAttendance = useMemo(() => {
-    if (!currentUser) return []
-    const today = formatDate(new Date())
-    return staffAttendance.filter((record) => record.staffEmail === currentUser.email && record.date === today)
-  }, [currentUser, staffAttendance])
-
-  const recentPupilAttendance = useMemo(() => {
-    if (!currentUser) return []
-    return pupilAttendance
-      .filter((record) => record.classId === currentUser.classId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 10)
-  }, [currentUser, pupilAttendance])
-
-  const today = formatDate(new Date())
-
-  const todaysReport = useMemo(() => {
-    if (!currentUser) return undefined
-    return dailyReports.find(
-      (report) =>
-        report.staffEmail === currentUser.email &&
-        report.classId === currentUser.classId &&
-        report.date === today,
-    )
-  }, [currentUser, dailyReports, today])
-
-  const isSignInClosed = isAfterSignInCutoff()
+  const [today, setToday] = useState("")
+  const [isSignInClosed, setIsSignInClosed] = useState(false)
 
   useEffect(() => {
-    if (!todaysReport) {
-      setReportTopicsTaught("")
-      setReportActivitiesDone("")
-      setReportBehaviourNotes("")
-      setReportHomework("")
-      setReportGeneralComment("")
-      return
-    }
-    setReportTopicsTaught(todaysReport.topicsTaught)
-    setReportActivitiesDone(todaysReport.activitiesDone)
-    setReportBehaviourNotes(todaysReport.behaviourNotes)
-    setReportHomework(todaysReport.homework)
-    setReportGeneralComment(todaysReport.generalComment)
-  }, [todaysReport])
+    setToday(formatDate(new Date()))
+    setIsSignInClosed(isAfterSignInCutoff())
+  }, [])
+
+  const todayStaffAttendance = useMemo(() => {
+    if (!currentUser || !today) return []
+    return staffAttendance.filter((record) => record.staffEmail === currentUser.email && record.date === today)
+  }, [currentUser, staffAttendance, today])
 
   const myReports = useMemo(() => {
     if (!currentUser) return []
@@ -241,122 +186,12 @@ export default function StaffDashboard() {
     return reports.slice(0, 10)
   }, [currentUser, dailyReports])
 
-  const handleStaffSignIn = () => {
-    if (!currentUser) return
-    if (typeof window === "undefined") return
-    if (isAfterSignInCutoff()) return
-    const todayExisting = staffAttendance.some(
-      (record) => record.staffEmail === currentUser.email && record.date === today,
-    )
-    if (todayExisting) return
-    setIsSigningIn(true)
-    const now = new Date()
-    const date = formatDate(now)
-    const time = formatTime(now)
-    const createdAt = now.toISOString()
-    const record: StaffAttendanceRecord = {
-      id: `${currentUser.email}-${createdAt}`,
-      staffEmail: currentUser.email || "",
-      date,
-      time,
-      createdAt,
-    }
-    const updated = [...staffAttendance, record]
-    setStaffAttendance(updated)
-    window.localStorage.setItem(STAFF_ATTENDANCE_KEY, JSON.stringify(updated))
-    setIsSigningIn(false)
-  }
-
-  const handleStatusChange = (pupilId: string, status: PupilAttendanceRecord["status"]) => {
-    setTodayStatuses((prev) => ({
-      ...prev,
-      [pupilId]: status,
-    }))
-  }
-
-  const handleSaveAttendance = () => {
-    if (!currentUser) return
-    if (typeof window === "undefined") return
-    setIsSavingAttendance(true)
-    const now = new Date()
-    const date = formatDate(now)
-    const time = formatTime(now)
-    const createdAt = now.toISOString()
-    const newRecords: PupilAttendanceRecord[] = []
-    Object.entries(todayStatuses).forEach(([pupilId, status]) => {
-      if (!status) return
-      const record: PupilAttendanceRecord = {
-        id: `${pupilId}-${createdAt}`,
-        pupilId,
-        classId: currentUser.classId || "",
-        staffEmail: currentUser.email || "",
-        date,
-        time,
-        status,
-        createdAt,
-      }
-      newRecords.push(record)
-    })
-    if (newRecords.length === 0) {
-      setIsSavingAttendance(false)
-      return
-    }
-    const updated = [...pupilAttendance, ...newRecords]
-    setPupilAttendance(updated)
-    window.localStorage.setItem(PUPIL_ATTENDANCE_KEY, JSON.stringify(updated))
-    setIsSavingAttendance(false)
-  }
-
-  const handleSaveReport = () => {
-    if (!currentUser) return
-    if (typeof window === "undefined") return
-    setIsSavingReport(true)
-    const now = new Date()
-    const date = formatDate(now)
-    const createdAt = now.toISOString()
-    const existingIndex = dailyReports.findIndex(
-      (report) =>
-        report.staffEmail === currentUser.email &&
-        report.classId === currentUser.classId &&
-        report.date === date,
-    )
-    const baseReport: DailyReport = {
-      id: `${currentUser.email}-${currentUser.classId}-${date}`,
-      staffEmail: currentUser.email || "",
-      classId: currentUser.classId || "",
-      date,
-      topicsTaught: reportTopicsTaught,
-      activitiesDone: reportActivitiesDone,
-      behaviourNotes: reportBehaviourNotes,
-      homework: reportHomework,
-      generalComment: reportGeneralComment,
-      createdAt,
-    }
-    let updated: DailyReport[]
-    if (existingIndex >= 0) {
-      updated = dailyReports.slice()
-      updated[existingIndex] = {
-        ...updated[existingIndex],
-        topicsTaught: baseReport.topicsTaught,
-        activitiesDone: baseReport.activitiesDone,
-        behaviourNotes: baseReport.behaviourNotes,
-        homework: baseReport.homework,
-        generalComment: baseReport.generalComment,
-      }
-    } else {
-      updated = [...dailyReports, baseReport]
-    }
-    setDailyReports(updated)
-    window.localStorage.setItem(DAILY_REPORTS_KEY, JSON.stringify(updated))
-    setIsSavingReport(false)
-  }
-
   const handleLogout = () => { signOut(() => { router.push("/login") }) }
 
-  const pendingLeaveCount = useMemo(() => {
+  const pendingLoanCount = useMemo(() => {
     if (!currentUser) return 0
-    return leaveRequests.filter(req => req.staffEmail === currentUser.email && req.status === "Pending").length
-  }, [currentUser, leaveRequests])
+    return loanRequests.filter(req => req.staffEmail === currentUser.email && req.status === "Pending").length
+  }, [currentUser, loanRequests])
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50/50">
@@ -417,12 +252,12 @@ export default function StaffDashboard() {
                   Daily Report
                 </Link>
                 <Link
-                  href="/staff/leave"
+                  href="/staff/loan"
                   className="flex items-center gap-2"
                   onClick={() => setIsMobileNavOpen(false)}
                 >
-                  <Calendar className="h-5 w-5" />
-                  Leave Request
+                  <Banknote className="h-5 w-5" />
+                  Loan Request
                 </Link>
                 <Link
                   href="/staff/pupils"
@@ -463,10 +298,10 @@ export default function StaffDashboard() {
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
             </DropdownMenuItem>
-            <Link href="/staff/leave">
+            <Link href="/staff/loan">
               <DropdownMenuItem>
-                <Calendar className="mr-2 h-4 w-4" />
-                <span>Leave Request</span>
+                <Banknote className="mr-2 h-4 w-4" />
+                <span>Loan Request</span>
               </DropdownMenuItem>
             </Link>
             <Link href="/staff/pupils">
@@ -556,19 +391,19 @@ export default function StaffDashboard() {
           <Card className="border-t-4 border-t-purple-500 shadow-sm relative group">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Leave Status
+                Loan Status
               </CardTitle>
               <div className="rounded-full bg-purple-50 p-1">
-                <Calendar className="h-4 w-4 text-purple-500" />
+                <Banknote className="h-4 w-4 text-purple-500" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold text-slate-800">{pendingLeaveCount}</div>
+              <div className="text-xl font-bold text-slate-800">{pendingLoanCount}</div>
               <p className="text-xs text-muted-foreground mt-1 font-medium">Pending Requests</p>
             </CardContent>
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                <Button size="sm" variant="secondary" asChild className="shadow-sm">
-                 <Link href="/staff/leave">Manage Leave</Link>
+                 <Link href="/staff/loan">Manage Loans</Link>
                </Button>
             </div>
           </Card>

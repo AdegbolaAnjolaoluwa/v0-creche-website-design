@@ -2,11 +2,11 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { BookOpen, ChevronDown, Download, Edit, Filter, Plus, Search, Trash, User } from "lucide-react"
+import { BookOpen, Calendar, ChevronDown, Download, Edit, Filter, Plus, Search, Trash, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -56,7 +56,31 @@ export default function PupilsPage() {
 
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedClass, setSelectedClass] = useState(initialSelectedClass)
-  const [pupils, setPupils] = useState<Pupil[]>(pupilsData)
+  const [pupils, setPupils] = useState<Pupil[]>([])
+  
+  useEffect(() => {
+    fetchPupils()
+  }, [])
+
+  const fetchPupils = async () => {
+    try {
+      const res = await fetch("/api/admin/pupils")
+      if (res.ok) {
+        const data = await res.json()
+        // Map database fields to UI fields if necessary
+        // Assuming API returns { id, name, classId, ... } and UI expects { id, name, class, ... }
+        // We might need to map classId -> class name
+        const mapped = data.map((p: any) => ({
+            ...p,
+            class: p.classId, // Temporary mapping until we join with classes table
+            guardians: JSON.parse(p.guardians || "[]")
+        }))
+        setPupils(mapped)
+      }
+    } catch (e) {
+      console.error("Failed to fetch pupils", e)
+    }
+  }
   const [isAddPupilOpen, setIsAddPupilOpen] = useState(false)
   const [newPupil, setNewPupil] = useState({
     name: "",
@@ -117,28 +141,43 @@ export default function PupilsPage() {
   }
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const newId = `LL-${new Date().getFullYear()}-${String(pupils.length + 1).padStart(3, "0")}`
-    const newRecord: Pupil = {
-      id: newId,
-      name: newPupil.name,
-      class: newPupil.class,
-      gender: newPupil.gender,
-      dateOfBirth: newPupil.dateOfBirth,
-      guardians: newPupil.guardians.filter((guardian) => guardian.name || guardian.contactNumber),
-      enrollmentDate: new Date().toISOString().split("T")[0],
+    
+    try {
+      const res = await fetch("/api/admin/pupils", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newPupil.name,
+          classId: newPupil.class,
+          gender: newPupil.gender,
+          dateOfBirth: newPupil.dateOfBirth,
+          enrollmentDate: new Date().toISOString().split('T')[0],
+          guardians: newPupil.guardians
+        })
+      })
+      
+      if (res.ok) {
+        const data = await res.json()
+        const created = {
+          ...data.pupil,
+          class: data.pupil.classId,
+          guardians: JSON.parse(data.pupil.guardians)
+        }
+        setPupils((prev) => [...prev, created])
+        setIsAddPupilOpen(false)
+        setNewPupil({
+          name: "",
+          class: "",
+          gender: "",
+          dateOfBirth: "",
+          guardians: [{ name: "", contactNumber: "" }],
+        })
+      }
+    } catch (e) {
+      console.error("Failed to create pupil", e)
     }
-    setPupils((prev) => [...prev, newRecord])
-    setIsAddPupilOpen(false)
-    // Reset form
-    setNewPupil({
-      name: "",
-      class: "",
-      gender: "",
-      dateOfBirth: "",
-      guardians: [{ name: "", contactNumber: "" }],
-    })
   }
 
   const handleEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -343,6 +382,13 @@ export default function PupilsPage() {
             >
               <BookOpen className="h-4 w-4" />
               Daily Reports
+            </Link>
+            <Link
+              href="/admin/loan"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+            >
+              <Calendar className="h-4 w-4" />
+              Staff Loan
             </Link>
             <Link
               href="/admin/settings"

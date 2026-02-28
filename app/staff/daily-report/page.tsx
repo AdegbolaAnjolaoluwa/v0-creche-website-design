@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useClerk } from "@clerk/nextjs"
+import { useClerk, useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, BookOpen, CheckCircle2, ChevronDown, Clock, Home, LogOut, Menu, User, Users } from "lucide-react"
+import { ArrowLeft, Banknote, BookOpen, CheckCircle2, ChevronDown, Clock, Home, LogOut, Menu, User, Users } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -68,10 +68,20 @@ function isAfterSignInCutoff() {
 }
 
 export default function DailyReportPage() {
-  const { signOut } = useClerk();
+  const { signOut } = useClerk()
+  const { user, isLoaded, isSignedIn } = useUser()
   const router = useRouter()
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  
+  const currentUser = useMemo(() => {
+    if (!user) return null
+    return {
+      role: (user.publicMetadata.role as string) || "staff",
+      email: user.primaryEmailAddress?.emailAddress,
+      classId: (user.publicMetadata.classId as string)
+    }
+  }, [user])
+
   const [dailyReports, setDailyReports] = useState<DailyReport[]>([])
   const [reportTopicsTaught, setReportTopicsTaught] = useState("")
   const [reportIncidentReport, setReportIncidentReport] = useState("")
@@ -81,23 +91,10 @@ export default function DailyReportPage() {
   const [staffAttendance, setStaffAttendance] = useState<StaffAttendanceRecord[]>([])
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const storedUser = window.localStorage.getItem("currentUser")
-    if (!storedUser) {
-      router.push("/login?type=staff")
-      return
-    }
-    try {
-      const parsed = JSON.parse(storedUser) as CurrentUser
-      if (parsed.role !== "staff" || !parsed.classId) {
-        router.push("/login?type=staff")
-        return
-      }
-      setCurrentUser(parsed)
-    } catch {
+    if (isLoaded && !isSignedIn) {
       router.push("/login?type=staff")
     }
-  }, [router])
+  }, [isLoaded, isSignedIn, router])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -196,7 +193,6 @@ export default function DailyReportPage() {
     let updated: DailyReport[]
     if (existingIndex >= 0) {
       updated = dailyReports.slice()
-      // Keep existing approval if it was already approved
       const existing = updated[existingIndex]
       updated[existingIndex] = {
         ...existing,
@@ -204,8 +200,6 @@ export default function DailyReportPage() {
         incidentReport: baseReport.incidentReport,
         homework: baseReport.homework,
         generalComment: baseReport.generalComment,
-        // Reset to pending if edited, unless already approved?
-        // Let's reset to pending if edited
         approvalStatus: "Pending",
       }
     } else {
@@ -216,7 +210,7 @@ export default function DailyReportPage() {
     setIsSavingReport(false)
   }
 
-  const handleLogout = () => { signOut(() => { router.push("/login") }) }
+  const handleLogout = () => { router.push("/login") }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -276,6 +270,14 @@ export default function DailyReportPage() {
                   <BookOpen className="h-5 w-5" />
                   Daily Report
                 </Link>
+                <Link
+                  href="/staff/loan"
+                  className="flex items-center gap-2"
+                  onClick={() => setIsMobileNavOpen(false)}
+                >
+                  <Banknote className="h-5 w-5" />
+                  Loan Request
+                </Link>
               </div>
             </nav>
           </SheetContent>
@@ -307,6 +309,12 @@ export default function DailyReportPage() {
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
             </DropdownMenuItem>
+            <Link href="/staff/loan">
+              <DropdownMenuItem>
+                <Banknote className="mr-2 h-4 w-4" />
+                <span>Loan Request</span>
+              </DropdownMenuItem>
+            </Link>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />

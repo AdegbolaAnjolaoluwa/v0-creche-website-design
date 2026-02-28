@@ -85,21 +85,27 @@ export async function PATCH(req: Request) {
     const body = await req.json()
     const targetUserId = body.userId
     const newRole = body.role
+    const newClassId = body.classId
 
-    if (!targetUserId || !newRole) {
-      return NextResponse.json({ error: 'User ID and Role are required' }, { status: 400 })
+    if (!targetUserId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
     }
 
     const client = await clerkClient()
+    
+    // Prepare metadata update
+    const metadata: Record<string, any> = {}
+    if (newRole) metadata.role = newRole
+    if (newClassId !== undefined) metadata.classId = newClassId
 
     // Update user metadata
-    await client.users.updateUserMetadata(targetUserId, {
-      publicMetadata: {
-        role: newRole
-      }
-    })
+    if (Object.keys(metadata).length > 0) {
+      await client.users.updateUserMetadata(targetUserId, {
+        publicMetadata: metadata
+      })
+    }
 
-    return NextResponse.json({ success: true, message: `Role updated to ${newRole}` })
+    return NextResponse.json({ success: true, message: 'User updated successfully' })
   } catch (error: any) {
     console.error('Error updating role:', error)
     return NextResponse.json(

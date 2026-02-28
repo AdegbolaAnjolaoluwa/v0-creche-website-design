@@ -5,7 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { BookOpen, ChevronDown, Edit, Plus, Trash, User, Users } from "lucide-react"
+import { BookOpen, Calendar, ChevronDown, Edit, Plus, Trash, User, Users } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -212,6 +212,13 @@ export default function ClassesPage() {
             >
               <BookOpen className="h-4 w-4" />
               Daily Reports
+            </Link>
+            <Link
+              href="/admin/loan"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+            >
+              <Calendar className="h-4 w-4" />
+              Staff Loan
             </Link>
             <Link
               href="/admin/settings"

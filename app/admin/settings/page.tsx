@@ -175,16 +175,46 @@ export default function SettingsPage() {
     }
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsLoading(true)
-    // Save staff assignments to localStorage
+    
+    // Save staff assignments to localStorage (keep as backup/cache)
     if (typeof window !== "undefined") {
       window.localStorage.setItem(STAFF_ASSIGNMENTS_KEY, JSON.stringify(staffAssignments))
     }
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      // Sync assignments to Clerk Metadata
+      const updates = Object.entries(staffAssignments).map(async ([classId, assignment]) => {
+        if (!assignment.email) return;
+        
+        // Find user by email
+        const user = users.find(u => u.email.toLowerCase() === assignment.email.toLowerCase());
+        if (user) {
+          await fetch('/api/admin/users', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id, classId: classId })
+          });
+        }
+      });
+
+      await Promise.all(updates);
+      
+      toast({
+        title: "Settings Saved",
+        description: "Staff assignments have been updated successfully."
+      })
+    } catch (error) {
+      console.error("Failed to sync assignments", error);
+      toast({
+        title: "Error",
+        description: "Failed to sync some assignments to the server.",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
   const handleInviteUser = async (e: React.FormEvent) => {
@@ -382,11 +412,11 @@ export default function SettingsPage() {
               Settings
             </Link>
             <Link
-              href="/admin/leave"
+              href="/admin/loan"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
             >
               <Calendar className="h-4 w-4" />
-              Staff Leave
+              Staff Loan
             </Link>
           </nav>
         </aside>

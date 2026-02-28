@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useClerk } from "@clerk/nextjs"
+import { useClerk, useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { BookOpen, Calendar, ChevronDown, Eye, Filter, Home, LogOut, Menu, Search, User, Users } from "lucide-react"
 
@@ -57,32 +57,28 @@ type DailyReport = {
 const DAILY_REPORTS_KEY = "dailyReports"
 
 export default function AdminDailyReportsPage() {
-  const { signOut } = useClerk();
+  const { signOut } = useClerk()
+  const { user, isLoaded, isSignedIn } = useUser()
   const router = useRouter()
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  
+  const currentUser = useMemo(() => {
+    if (!user) return null
+    return {
+      role: (user.publicMetadata.role as string) || "admin",
+      email: user.primaryEmailAddress?.emailAddress,
+    }
+  }, [user])
+
   const [dailyReports, setDailyReports] = useState<DailyReport[]>([])
   const [filterDate, setFilterDate] = useState("")
   const [filterClassId, setFilterClassId] = useState<string>("all")
   const [searchTerm, setSearchTerm] = useState("")
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const storedUser = window.localStorage.getItem("currentUser")
-    if (!storedUser) {
-      router.push("/login?type=admin")
-      return
-    }
-    try {
-      const parsed = JSON.parse(storedUser) as CurrentUser
-      if (parsed.role !== "admin") {
-        router.push("/login?type=admin")
-        return
-      }
-      setCurrentUser(parsed)
-    } catch {
+    if (isLoaded && !isSignedIn) {
       router.push("/login?type=admin")
     }
-  }, [router])
+  }, [isLoaded, isSignedIn, router])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -227,6 +223,13 @@ export default function AdminDailyReportsPage() {
             >
               <BookOpen className="h-4 w-4" />
               Daily Reports
+            </Link>
+            <Link
+              href="/admin/loan"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+            >
+              <Calendar className="h-4 w-4" />
+              Staff Loan
             </Link>
             <Link
               href="/admin/settings"

@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
-import { useClerk } from "@clerk/nextjs"
+import { useClerk, useUser } from "@clerk/nextjs"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ChevronDown, LogOut, User, Search, Phone } from "lucide-react"
@@ -29,38 +29,38 @@ type CurrentUser = {
 }
 
 export default function StaffPupilsPage() {
-  const { signOut } = useClerk();
+  const { signOut } = useClerk()
+  const { user, isLoaded, isSignedIn } = useUser()
   const router = useRouter()
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  
+  const currentUser = useMemo(() => {
+    if (!user) return null
+    return {
+      role: (user.publicMetadata.role as string) || "staff",
+      email: user.primaryEmailAddress?.emailAddress,
+      classId: (user.publicMetadata.classId as string)
+    }
+  }, [user])
+
   const [searchTerm, setSearchTerm] = useState("")
   const [classPupils, setClassPupils] = useState<Pupil[]>([])
   const [className, setClassName] = useState("")
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const storedUser = window.localStorage.getItem("currentUser")
-    if (!storedUser) {
+    if (isLoaded && !isSignedIn) {
       router.push("/login?type=staff")
       return
     }
-    try {
-      const parsed = JSON.parse(storedUser) as CurrentUser
-      if (parsed.role !== "staff" || !parsed.classId) {
-        router.push("/login?type=staff")
-        return
-      }
-      setCurrentUser(parsed)
-      
-      const assignedClass = classesData.find(cls => cls.id === parsed.classId)
+
+    if (currentUser) {
+      const assignedClass = classesData.find(cls => cls.id === currentUser.classId)
       if (assignedClass) {
         setClassName(assignedClass.name)
         const pupils = pupilsData.filter(p => p.class === assignedClass.name)
         setClassPupils(pupils)
       }
-    } catch {
-      router.push("/login?type=staff")
     }
-  }, [router])
+  }, [isLoaded, isSignedIn, currentUser, router])
 
   const filteredPupils = classPupils.filter(pupil => 
     pupil.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
