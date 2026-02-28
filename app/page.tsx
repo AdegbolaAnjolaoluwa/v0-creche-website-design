@@ -78,7 +78,7 @@ export default function Home() {
               </div>
               <div className="mx-auto w-full max-w-[500px] aspect-video overflow-hidden rounded-xl">
                 <Image
-                  src="/placeholder.svg?height=500&width=800"
+                  src="/hero section picture.JPG.jpg"
                   width={800}
                   height={500}
                   alt="Happy children learning and playing"
