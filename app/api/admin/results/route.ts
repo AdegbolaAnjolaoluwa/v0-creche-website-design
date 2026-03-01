@@ -25,17 +25,17 @@ export async function GET(req: NextRequest) {
       console.log("Seeding results database...");
       const resultsToInsert = resultsData.map(r => ({
         id: r.id,
-        studentId: r.pupilId || r.studentId || nanoid(),
-        studentName: r.pupilName || r.studentName,
+        studentId: r.pupilId || nanoid(),
+        studentName: r.pupilName,
         classId: r.class, // Map class name to classId for now
         term: r.term,
-        academicYear: r.academicYear || "2023/2024",
-        subjects: JSON.stringify(r.subjects || []),
-        totalScore: r.totalScore,
+        academicYear: "2023/2024",
+        subjects: JSON.stringify(r.scores || {}),
+        totalScore: r.finalScore || 0,
         averageScore: r.averageScore,
         grade: r.grade,
         teacherComment: r.teacherComment,
-        headTeacherComment: r.headTeacherComment,
+        headTeacherComment: r.proprietressComment,
         status: r.status,
         createdAt: Date.now(),
         updatedAt: Date.now(),
