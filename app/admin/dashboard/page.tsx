@@ -144,26 +144,97 @@ const loadLoanRequestsFromStorage = (): LoanRequest[] => {
 export default function AdminDashboard() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
 
-  const [results] = useState<ResultRecord[]>(() => loadResultsFromStorage())
-  const [pupilAttendance] = useState<PupilAttendanceRecord[]>(() => loadPupilAttendanceFromStorage())
-  const [dailyReports] = useState<DailyReport[]>(() => loadDailyReportsFromStorage())
-  const [loanRequests] = useState<LoanRequest[]>(() => loadLoanRequestsFromStorage())
+  const [dashboardMetrics, setDashboardMetrics] = useState({
+    totalPupils: 0,
+    totalClasses: 0,
+    totalResults: 0,
+    totalPublishedResults: 0,
+    totalDraftResults: 0,
+    averageScore: 0,
+    todaysAttendance: 0
+  });
 
-  const totalPupils = pupilsData.length
-  const totalClasses = classesData.length
+  const [chartsData, setChartsData] = useState<{
+    gradeDistribution: { grade: string, count: number }[],
+    classPerformance: { className: string, averageScore: number }[],
+    termPerformance: { term: string, averageScore: number }[],
+    attendanceStats: { status: string, count: number }[],
+    loanStats: { status: string, count: number }[],
+    totalReports: number
+  }>({
+    gradeDistribution: [],
+    classPerformance: [],
+    termPerformance: [],
+    attendanceStats: [],
+    loanStats: [],
+    totalReports: 0
+  });
 
-  const publishedResults = useMemo(
-    () => results.filter((result) => result.status === "Published"),
-    [results],
+  const [recentActivity, setRecentActivity] = useState<ResultRecord[]>([]);
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const res = await fetch("/api/admin/dashboard");
+        if (res.ok) {
+          const data = await res.json();
+          setDashboardMetrics(data.metrics);
+          setChartsData(data.charts);
+          
+          // Map API response to ResultRecord type
+          const mappedRecent = data.recentActivity.map((r: any) => ({
+            id: r.id,
+            studentName: r.studentName,
+            class: r.class || "Unknown",
+            term: r.term,
+            averageScore: r.averageScore,
+            status: r.status,
+            date: new Date(r.createdAt).toISOString().split('T')[0],
+            // Fill default values for fields not returned by this specific API query
+            studentId: "",
+            academicYear: "",
+            subjects: [],
+            totalScore: 0,
+            position: "",
+            teacherComment: "",
+            headTeacherComment: ""
+          }));
+          setRecentActivity(mappedRecent);
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard metrics", error);
+      }
+    };
+    fetchMetrics();
+  }, []);
+
+  const totalPupils = dashboardMetrics.totalPupils;
+  const totalClasses = dashboardMetrics.totalClasses;
+  const totalResults = dashboardMetrics.totalResults;
+  const attendanceToday = dashboardMetrics.todaysAttendance;
+  
+  // Metrics from API
+  const totalPublishedResults = dashboardMetrics.totalPublishedResults;
+  const totalDraftResults = dashboardMetrics.totalDraftResults;
+  const averageScore = dashboardMetrics.averageScore;
+
+  // Keep existing detailed logic for charts (can be migrated later if needed)
+  const results = useMemo<ResultRecord[]>(() => [], [])
+  const pupilAttendance = useMemo<PupilAttendanceRecord[]>(() => [], [])
+  const dailyReports = useMemo<DailyReport[]>(() => [], [])
+  const loanRequests = useMemo<LoanRequest[]>(() => [], [])
+
+  const publishedResults = useMemo<ResultRecord[]>(
+    () => [],
+    [],
   )
 
-  const totalPublishedResults = publishedResults.length
-  const totalDraftResults = results.length - totalPublishedResults
+  // const recentResults = useMemo<ResultRecord[]>(
+  //   () => [],
+  //   []
+  // )
 
-  const averageScore =
-    publishedResults.length > 0
-      ? publishedResults.reduce((sum, result) => sum + result.averageScore, 0) / publishedResults.length
-      : 0
+  const recentResults = recentActivity;
 
   const gradeAnalytics = useMemo(() => {
     const grades = ["A", "B", "C", "D", "F"] as const
@@ -175,11 +246,13 @@ export default function AdminDashboard() {
       F: 0,
     }
 
-    publishedResults.forEach((result) => {
-      if (result.grade && grades.includes(result.grade as (typeof grades)[number])) {
-        counts[result.grade as (typeof grades)[number]] += 1
-      }
-    })
+    if (chartsData?.gradeDistribution) {
+      chartsData.gradeDistribution.forEach((item) => {
+        if (grades.includes(item.grade as any)) {
+          counts[item.grade as (typeof grades)[number]] = item.count
+        }
+      })
+    }
 
     const total = grades.reduce((sum, grade) => sum + counts[grade], 0)
     const achievedAB = counts.A + counts.B
@@ -195,36 +268,17 @@ export default function AdminDashboard() {
         percent: total > 0 ? Math.round(((counts[grade] / total) * 100 + Number.EPSILON) * 10) / 10 : 0,
       })),
     }
-  }, [publishedResults])
+  }, [chartsData])
 
   const classAnalytics = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        totalScore: number
-        count: number
-      }
-    >()
-
-    publishedResults.forEach((result) => {
-      const key = result.class
-      const current = map.get(key) ?? { totalScore: 0, count: 0 }
-      map.set(key, {
-        totalScore: current.totalScore + result.averageScore,
-        count: current.count + 1,
-      })
-    })
-
-    const entries = Array.from(map.entries()).map(([className, value]) => ({
-      className,
-      count: value.count,
-      average: value.count > 0 ? value.totalScore / value.count : 0,
-    }))
-
-    entries.sort((a, b) => (a.average < b.average ? 1 : -1))
-
-    return entries
-  }, [publishedResults])
+    if (!chartsData?.classPerformance) return [];
+    
+    return chartsData.classPerformance.map((item) => ({
+      className: item.className,
+      count: 1, // API returns aggregated, so count is technically 1 per row, but avg is pre-calculated
+      average: item.averageScore,
+    })).sort((a, b) => (a.average < b.average ? 1 : -1))
+  }, [chartsData])
 
   const termOrder: Record<string, number> = {
     "Term 1": 1,
@@ -233,30 +287,13 @@ export default function AdminDashboard() {
   }
 
   const termAnalytics = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        totalScore: number
-        count: number
-      }
-    >()
+    if (!chartsData?.termPerformance) return [];
 
-    publishedResults.forEach((result) => {
-      const key = result.term
-      const current = map.get(key) ?? { totalScore: 0, count: 0 }
-      map.set(key, {
-        totalScore: current.totalScore + result.averageScore,
-        count: current.count + 1,
-      })
-    })
-
-    const entries = Array.from(map.entries()).map(([term, value]) => ({
-      term,
-      count: value.count,
-      average: value.count > 0 ? value.totalScore / value.count : 0,
-    }))
-
-    entries.sort((a, b) => {
+    return chartsData.termPerformance.map((item) => ({
+      term: item.term,
+      count: 1,
+      average: item.averageScore,
+    })).sort((a, b) => {
       const orderA = termOrder[a.term] ?? 99
       const orderB = termOrder[b.term] ?? 99
       if (orderA === orderB) {
@@ -264,117 +301,82 @@ export default function AdminDashboard() {
       }
       return orderA - orderB
     })
-
-    return entries
-  }, [publishedResults])
+  }, [chartsData])
 
   const statusAnalytics = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        count: number
-      }
-    >()
-
-    results.forEach((result) => {
-      const key = result.status || "Unknown"
-      const current = map.get(key) ?? { count: 0 }
-      map.set(key, {
-        count: current.count + 1,
-      })
-    })
-
-    const entries = Array.from(map.entries()).map(([status, value]) => ({
-      status,
-      count: value.count,
-    }))
-
-    const total = entries.reduce((sum, entry) => sum + entry.count, 0)
+    // We already have these from metrics
+    const total = totalPublishedResults + totalDraftResults;
+    const entries = [
+      { status: "Published", count: totalPublishedResults },
+      { status: "Draft", count: totalDraftResults }
+    ];
 
     const withPercent = entries.map((entry) => ({
       ...entry,
       percent: total > 0 ? Math.round(((entry.count / total) * 100 + Number.EPSILON) * 10) / 10 : 0,
     }))
 
-    withPercent.sort((a, b) => b.count - a.count)
-
     return {
       total,
       breakdown: withPercent,
     }
-  }, [results])
+  }, [totalPublishedResults, totalDraftResults])
 
   const attendanceAnalytics = useMemo(() => {
-    if (pupilAttendance.length === 0) {
-      return {
-        overallPercent: 0,
-        totalRecords: 0,
-        uniquePupils: 0,
-        atRiskCount: 0,
+    if (!chartsData?.attendanceStats) return {
+      overallPercent: 0,
+      totalRecords: 0,
+      uniquePupils: 0,
+      atRiskCount: 0,
+    };
+
+    let totalRecords = 0;
+    let presentCount = 0;
+
+    chartsData.attendanceStats.forEach(stat => {
+      totalRecords += stat.count;
+      if (stat.status === "Present" || stat.status === "Late") {
+        presentCount += stat.count;
       }
-    }
+    });
 
-    const byPupil = new Map<string, Map<string, PupilAttendanceRecord["status"]>>()
-
-    pupilAttendance.forEach((record) => {
-      if (!byPupil.has(record.pupilId)) {
-        byPupil.set(record.pupilId, new Map())
-      }
-      byPupil.get(record.pupilId)!.set(record.date, record.status)
-    })
-
-    let totalDays = 0
-    let totalPresentDays = 0
-    let atRiskCount = 0
-
-    byPupil.forEach((dates) => {
-      const days = dates.size
-      if (days === 0) return
-      let presentDays = 0
-      dates.forEach((status) => {
-        if (status === "Absent") return
-        presentDays += 1
-      })
-      totalDays += days
-      totalPresentDays += presentDays
-      const percent = (presentDays / days) * 100
-      if (percent < 75) {
-        atRiskCount += 1
-      }
-    })
-
-    const overallPercent =
-      totalDays > 0 ? Math.round(((totalPresentDays / totalDays) * 100 + Number.EPSILON) * 10) / 10 : 0
+    const overallPercent = totalRecords > 0 
+      ? Math.round(((presentCount / totalRecords) * 100 + Number.EPSILON) * 10) / 10 
+      : 0;
 
     return {
       overallPercent,
-      totalRecords: pupilAttendance.length,
-      uniquePupils: byPupil.size,
-      atRiskCount,
+      totalRecords,
+      uniquePupils: 0, // Not available in simple aggregation yet
+      atRiskCount: 0, // Not available in simple aggregation yet
     }
-  }, [pupilAttendance])
+  }, [chartsData])
 
   const reportsAnalytics = useMemo(
     () => ({
-      totalReports: dailyReports.length,
+      totalReports: chartsData?.totalReports || 0,
     }),
-    [dailyReports],
+    [chartsData],
   )
   
   const loanAnalytics = useMemo(() => {
-    return {
-      pending: loanRequests.filter(r => r.status === "Pending").length,
-      total: loanRequests.length
+    let pending = 0;
+    let total = 0;
+    
+    if (chartsData?.loanStats) {
+      chartsData.loanStats.forEach(stat => {
+        total += stat.count;
+        if (stat.status === "Pending") pending += stat.count;
+      });
     }
-  }, [loanRequests])
 
-  const recentResults = useMemo(
-    () =>
-      [...results]
-        .sort((a, b) => (a.date < b.date ? 1 : -1))
-        .slice(0, 3),
-    [results],
-  )
+    return {
+      pending,
+      total
+    }
+  }, [chartsData])
+
+  // Removed duplicate recentResults declaration here as it is now handled by API data above
 
   const sortedReports = useMemo(
     () => [...results].sort((a, b) => (a.date < b.date ? 1 : -1)),
