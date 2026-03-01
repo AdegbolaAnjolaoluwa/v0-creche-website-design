@@ -89,6 +89,7 @@ export default function DailyReportPage() {
   const [reportGeneralComment, setReportGeneralComment] = useState("")
   const [isSavingReport, setIsSavingReport] = useState(false)
   const [staffAttendance, setStaffAttendance] = useState<StaffAttendanceRecord[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -97,26 +98,46 @@ export default function DailyReportPage() {
   }, [isLoaded, isSignedIn, router])
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const storedReports = window.localStorage.getItem(DAILY_REPORTS_KEY)
-    const storedStaff = window.localStorage.getItem(STAFF_ATTENDANCE_KEY)
-    if (storedReports) {
-      try {
-        const parsed = JSON.parse(storedReports) as DailyReport[]
-        setDailyReports(parsed)
-      } catch {
-        setDailyReports([])
-      }
+    if (currentUser?.email) {
+      fetchReports()
     }
-    if (storedStaff) {
-      try {
-        const parsedStaff = JSON.parse(storedStaff) as StaffAttendanceRecord[]
-        setStaffAttendance(parsedStaff)
-      } catch {
-        setStaffAttendance([])
+  }, [currentUser])
+
+  const fetchReports = async () => {
+    setIsLoading(true)
+    try {
+      // Fetch reports from API
+      // Note: The API returns all reports, we might need to filter by staff email
+      // Ideally API should support filtering. 
+      // I'll assume I can filter client side for now or the API I built earlier supports filtering?
+      // Looking back at /api/admin/daily-reports/route.ts, it doesn't filter by submittedBy in GET.
+      // So I will filter here.
+      
+      const res = await fetch("/api/admin/daily-reports")
+      if (res.ok) {
+        const data = await res.json()
+        const mapped = data
+          .map((r: any) => {
+            const content = typeof r.content === 'string' ? JSON.parse(r.content) : r.content
+            return {
+                ...r,
+                topicsTaught: content.topicsTaught,
+                incidentReport: content.incidentReport,
+                homework: content.homework,
+                generalComment: content.generalComment,
+                staffEmail: r.submittedBy
+            }
+          })
+          .filter((r: any) => r.staffEmail === currentUser?.email)
+          
+        setDailyReports(mapped)
       }
+    } catch (e) {
+      console.error("Failed to fetch reports", e)
+    } finally {
+      setIsLoading(false)
     }
-  }, [])
+  }
 
   const assignedClass = useMemo(
     () => classesData.find((cls) => cls.id === currentUser?.classId),
@@ -165,49 +186,46 @@ export default function DailyReportPage() {
     return reports.slice(0, 20)
   }, [currentUser, dailyReports])
 
-  const handleSaveReport = () => {
+  const handleSaveReport = async () => {
     if (!currentUser) return
-    if (typeof window === "undefined") return
     setIsSavingReport(true)
-    const now = new Date()
-    const date = formatDate(now)
-    const createdAt = now.toISOString()
-    const existingIndex = dailyReports.findIndex(
-      (report) =>
-        report.staffEmail === currentUser.email &&
-        report.classId === currentUser.classId &&
-        report.date === date,
-    )
-    const baseReport: DailyReport = {
-      id: `${currentUser.email}-${currentUser.classId}-${date}`,
-      staffEmail: currentUser.email || "",
-      classId: currentUser.classId || "",
-      date,
-      topicsTaught: reportTopicsTaught,
-      incidentReport: reportIncidentReport,
-      homework: reportHomework,
-      generalComment: reportGeneralComment,
-      createdAt,
-      approvalStatus: "Pending",
-    }
-    let updated: DailyReport[]
-    if (existingIndex >= 0) {
-      updated = dailyReports.slice()
-      const existing = updated[existingIndex]
-      updated[existingIndex] = {
-        ...existing,
-        topicsTaught: baseReport.topicsTaught,
-        incidentReport: baseReport.incidentReport,
-        homework: baseReport.homework,
-        generalComment: baseReport.generalComment,
-        approvalStatus: "Pending",
+    
+    try {
+      const now = new Date()
+      const date = formatDate(now)
+      
+      const content = {
+        topicsTaught: reportTopicsTaught,
+        incidentReport: reportIncidentReport,
+        homework: reportHomework,
+        generalComment: reportGeneralComment
       }
-    } else {
-      updated = [...dailyReports, baseReport]
+
+      const res = await fetch("/api/admin/daily-reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date,
+          studentId: "all", // Or specific student if this page supports it (seems like class report)
+          classId: currentUser.classId,
+          content,
+          submittedBy: currentUser.email
+        })
+      })
+
+      if (res.ok) {
+        alert("Report submitted successfully!")
+        // Refresh reports
+        fetchReports()
+      } else {
+        alert("Failed to submit report")
+      }
+    } catch (e) {
+      console.error("Failed to save report", e)
+      alert("Failed to save report")
+    } finally {
+      setIsSavingReport(false)
     }
-    setDailyReports(updated)
-    window.localStorage.setItem(DAILY_REPORTS_KEY, JSON.stringify(updated))
-    setIsSavingReport(false)
   }
 
   const handleLogout = () => { router.push("/login") }

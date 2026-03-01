@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useUser, useOrganization } from "@clerk/nextjs"
+import { useUser } from "@clerk/nextjs"
 import { BarChart3, BookOpen, ChevronDown, Download, FileText, Home, LogOut, Menu, Settings, User } from "lucide-react"
 import { useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
@@ -21,106 +21,91 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-// Sample pupil data
-const pupilData = {
-  name: "Agboola Jasmine",
-  id: "BH-N2-001",
-  class: "Nursery 2",
-  term: "Term 2",
-  results: [
-    {
-      subject: "Reading",
-      midterm: 85,
-      exam: 78,
-      total: 80.8,
-      grade: "A",
-    },
-    {
-      subject: "Writing",
-      midterm: 72,
-      exam: 68,
-      total: 69.6,
-      grade: "B",
-    },
-    {
-      subject: "Arithmetic",
-      midterm: 65,
-      exam: 70,
-      total: 68,
-      grade: "B",
-    },
-    {
-      subject: "Arts & Crafts",
-      midterm: 90,
-      exam: 85,
-      total: 87,
-      grade: "A",
-    },
-    {
-      subject: "Science",
-      midterm: 75,
-      exam: 72,
-      total: 73.2,
-      grade: "A",
-    },
-    {
-      subject: "Social Studies",
-      midterm: 68,
-      exam: 65,
-      total: 66.2,
-      grade: "B",
-    },
-    {
-      subject: "Physical Education",
-      midterm: 88,
-      exam: 90,
-      total: 89.2,
-      grade: "A",
-    },
-    {
-      subject: "Music",
-      midterm: 82,
-      exam: 78,
-      total: 79.6,
-      grade: "A",
-    },
-  ],
-  previousTerms: [
-    {
-      term: "Term 1",
-      year: "2023/2024",
-      averageScore: 76.5,
-      date: "December 15, 2023",
-    },
-  ],
-}
-
 export default function ParentDashboard() {
   const router = useRouter();
   const { signOut } = useClerk();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
   const { user } = useUser()
-  const { organization, membership } = useOrganization()
+  
+  const [pupil, setPupil] = useState<any>(null)
+  const [results, setResults] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Retrieve studentId from organization membership public metadata
-  const studentId = membership?.publicMetadata?.studentId as string | undefined;
+  useEffect(() => {
+    fetchDashboardData()
+  }, [])
 
-  // In a real application, you would use this 'studentId' to fetch the specific child's data
-  // from your database instead of using the hardcoded 'pupilData'.
-  // Example: 
-  // const { data: pupilData } = useQuery(['pupil', studentId], () => fetchPupil(studentId));
+  const fetchDashboardData = async () => {
+    setIsLoading(true)
+    try {
+      const res = await fetch("/api/parent/dashboard")
+      if (res.ok) {
+        const data = await res.json()
+        setPupil(data.pupil)
+        setResults(data.results)
+      }
+    } catch (e) {
+      console.error("Failed to fetch dashboard data", e)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
+  // Calculate stats from the latest result if available
+  const latestResult = results.length > 0 ? results[0] : null
+  const subjects = latestResult ? latestResult.subjects : []
+  
   // Calculate average score
-  const averageScore = pupilData.results.reduce((acc, result) => acc + result.total, 0) / pupilData.results.length
+  const averageScore = subjects.length > 0 
+    ? subjects.reduce((acc: number, sub: any) => acc + (sub.total || 0), 0) / subjects.length 
+    : 0
 
   // Count grades
-  const gradeCount = pupilData.results.reduce(
+  const gradeCount = subjects.reduce(
     (acc: Record<string, number>, result: any) => {
-      acc[result.grade] = (acc[result.grade] || 0) + 1
+      if (result.grade) {
+        acc[result.grade] = (acc[result.grade] || 0) + 1
+      }
       return acc
     },
     {} as Record<string, number>,
   )
+
+  const handleLogout = () => {
+    signOut(() => router.push("/login"));
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50/50">
+        <div className="text-center">
+          <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto"></div>
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!pupil) {
+    return (
+        <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50/50 p-4">
+            <Card className="w-full max-w-md text-center">
+                <CardHeader>
+                    <CardTitle>No Pupil Found</CardTitle>
+                    <CardDescription>
+                        We couldn&apos;t find a pupil linked to your account.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="mb-4 text-sm text-muted-foreground">
+                        Please contact the school administrator to ensure your email address is correctly linked to your child&apos;s profile.
+                    </p>
+                    <Button onClick={handleLogout} variant="outline">Log out</Button>
+                </CardContent>
+            </Card>
+        </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -254,8 +239,8 @@ export default function ParentDashboard() {
                 <User className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-xl font-bold">{pupilData.name}</div>
-                <p className="text-xs text-muted-foreground">ID: {pupilData.id}</p>
+                <div className="text-xl font-bold">{pupil?.name}</div>
+                <p className="text-xs text-muted-foreground">ID: {pupil?.id}</p>
               </CardContent>
             </Card>
             <Card>
@@ -264,8 +249,8 @@ export default function ParentDashboard() {
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-xl font-bold">{pupilData.class}</div>
-                <p className="text-xs text-muted-foreground">{pupilData.term}</p>
+                <div className="text-xl font-bold">{pupil?.classId}</div>
+                <p className="text-xs text-muted-foreground">{latestResult?.term || "Current Term"}</p>
               </CardContent>
             </Card>
             <Card>
@@ -295,7 +280,7 @@ export default function ParentDashboard() {
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-xl font-bold">{pupilData.results.length}</div>
+                <div className="text-xl font-bold">{subjects.length}</div>
                 <p className="text-xs text-muted-foreground">
                   {gradeCount.A || 0} A's, {gradeCount.B || 0} B's, {gradeCount.C || 0} C's
                 </p>
@@ -314,7 +299,7 @@ export default function ParentDashboard() {
                   <div>
                     <CardTitle>Term Results</CardTitle>
                     <CardDescription>
-                      {pupilData.class} - {pupilData.term}
+                      {pupil?.classId} - {latestResult?.term || "N/A"}
                     </CardDescription>
                   </div>
                   <Button variant="outline" size="sm">
@@ -332,12 +317,12 @@ export default function ParentDashboard() {
                       <div className="col-span-2 text-center">Grade</div>
                     </div>
                     <div className="divide-y">
-                      {pupilData.results.map((result) => (
+                      {subjects.map((result: any) => (
                         <div key={result.subject} className="grid grid-cols-12 gap-2 p-4 items-center">
                           <div className="col-span-4">{result.subject}</div>
                           <div className="col-span-2 text-center">{result.midterm}</div>
                           <div className="col-span-2 text-center">{result.exam}</div>
-                          <div className="col-span-2 text-center">{result.total.toFixed(1)}</div>
+                          <div className="col-span-2 text-center">{(result.total || 0).toFixed(1)}</div>
                           <div className="col-span-2 text-center">
                             <span
                               className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -375,8 +360,7 @@ export default function ParentDashboard() {
                     <h4 className="font-medium mb-2">Teacher's Comment</h4>
                     <div className="p-4 border rounded-md">
                       <p className="text-sm">
-                        Alex has shown good progress this term. Particularly strong in Arts & Crafts and Physical
-                        Education. Continue to encourage reading at home to further improve literacy skills.
+                        {latestResult?.teacherComment || "No comment yet."}
                       </p>
                     </div>
                   </div>
@@ -390,16 +374,16 @@ export default function ParentDashboard() {
                   <CardDescription>View results from previous academic terms</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {pupilData.previousTerms.length > 0 ? (
+                  {results.length > 1 ? (
                     <div className="space-y-4">
-                      {pupilData.previousTerms.map((term: any, index: number) => (
+                      {results.slice(1).map((term: any, index: number) => (
                         <div key={index} className="flex items-center justify-between p-4 border rounded-md">
                           <div>
                             <h4 className="font-medium">
-                              {term.term} - {term.year}
+                              {term.term} - {term.academicYear || "N/A"}
                             </h4>
                             <p className="text-sm text-muted-foreground">Average Score: {term.averageScore}%</p>
-                            <p className="text-xs text-muted-foreground">Published: {term.date}</p>
+                            <p className="text-xs text-muted-foreground">Published: {new Date(term.createdAt).toLocaleDateString()}</p>
                           </div>
                           <Button variant="outline" size="sm">
                             <FileText className="mr-2 h-4 w-4" />

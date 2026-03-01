@@ -335,23 +335,18 @@ export default function AdminDailyReportsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {filteredReports.length === 0 ? (
-                <div className="text-sm text-muted-foreground">
-                  No daily reports found matching the filters.
-                </div>
-              ) : (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Class</TableHead>
-                        <TableHead>Staff Email</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Class</TableHead>
+                      <TableHead>Staff Email</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {isLoading ? (
                       <TableRow>
                         <TableCell colSpan={5} className="h-24 text-center">

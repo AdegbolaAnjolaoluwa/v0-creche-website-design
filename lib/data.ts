@@ -2,6 +2,7 @@
 export type Guardian = {
   name: string
   contactNumber: string
+  email?: string
 }
 
 export type Pupil = {
@@ -22,7 +23,7 @@ export const pupilsData: Pupil[] = [
     class: "Nursery 2",
     gender: "Female",
     dateOfBirth: "2020-05-12",
-    guardians: [{ name: "Mr. and Mrs. Agboola", contactNumber: "+2348000000001" }],
+    guardians: [{ name: "Mr. and Mrs. Agboola", contactNumber: "+2348000000001", email: "parent@example.com" }],
     enrollmentDate: "2023-09-05",
   },
   {

@@ -5,7 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useClerk, useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Banknote, BookOpen, Check, ChevronDown, Home, LogOut, Menu, User, Users, X } from "lucide-react"
+import { ArrowLeft, Banknote, BookOpen, Check, ChevronDown, Clock, Home, LogOut, Menu, User, Users, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -63,9 +63,10 @@ export default function ClassAttendancePage() {
     }
   }, [user])
 
-  const [pupilAttendance, setPupilAttendance] = useState<PupilAttendanceRecord[]>([])
+  const [pupils, setPupils] = useState<any[]>([])
   const [todayStatuses, setTodayStatuses] = useState<Record<string, PupilAttendanceRecord["status"]>>({})
   const [isSavingAttendance, setIsSavingAttendance] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -74,50 +75,39 @@ export default function ClassAttendancePage() {
   }, [isLoaded, isSignedIn, router])
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const storedPupil = window.localStorage.getItem(PUPIL_ATTENDANCE_KEY)
-    if (storedPupil) {
-      try {
-        const parsed = JSON.parse(storedPupil) as PupilAttendanceRecord[]
-        setPupilAttendance(parsed)
-      } catch {
-        setPupilAttendance([])
-      }
+    if (currentUser?.classId) {
+      fetchData()
     }
-  }, [])
+  }, [currentUser])
 
-  const assignedClass = useMemo(
-    () => classesData.find((cls) => cls.id === currentUser?.classId),
-    [currentUser?.classId],
-  )
+  const fetchData = async () => {
+    setIsLoading(true)
+    try {
+      const today = formatDate(new Date())
+      
+      // Fetch pupils for the class
+      const pupilsRes = await fetch(`/api/admin/pupils?classId=${currentUser?.classId}`)
+      if (pupilsRes.ok) {
+        const pupilsData = await pupilsRes.json()
+        setPupils(pupilsData)
+      }
 
-  const classPupils = useMemo(() => {
-    if (!assignedClass) return []
-    return pupilsData.filter((pupil) => pupil.class === assignedClass.name)
-  }, [assignedClass])
-
-  const today = formatDate(new Date())
-
-  useEffect(() => {
-    if (!currentUser) return
-    const todaysRecords = pupilAttendance.filter(
-      (record) => record.classId === currentUser.classId && record.date === today && record.staffEmail === currentUser.email,
-    )
-    const map: Record<string, PupilAttendanceRecord["status"]> = {}
-    todaysRecords.forEach((record) => {
-      map[record.pupilId] = record.status
-    })
-    setTodayStatuses(map)
-  }, [currentUser, pupilAttendance, today])
-
-  const recentPupilAttendance = useMemo(() => {
-    if (!currentUser) return []
-    const records = pupilAttendance
-      .filter((record) => record.classId === currentUser.classId && record.staffEmail === currentUser.email)
-      .slice()
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    return records.slice(0, 20)
-  }, [currentUser, pupilAttendance])
+      // Fetch today's attendance
+      const attRes = await fetch(`/api/admin/attendance?classId=${currentUser?.classId}&date=${today}`)
+      if (attRes.ok) {
+        const attData = await attRes.json()
+        const map: Record<string, PupilAttendanceRecord["status"]> = {}
+        attData.forEach((record: any) => {
+          map[record.studentId] = record.status
+        })
+        setTodayStatuses(map)
+      }
+    } catch (e) {
+      console.error("Failed to fetch data", e)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleStatusChange = (pupilId: string, status: PupilAttendanceRecord["status"]) => {
     setTodayStatuses((prev) => ({
@@ -126,40 +116,42 @@ export default function ClassAttendancePage() {
     }))
   }
 
-  const handleSaveAttendance = () => {
-    if (!currentUser) return
-    if (typeof window === "undefined") return
+  const handleSaveAttendance = async () => {
+    if (!currentUser?.classId) return
     setIsSavingAttendance(true)
-    const now = new Date()
-    const date = formatDate(now)
-    const time = formatTime(now)
-    const createdAt = now.toISOString()
-    const newRecords: PupilAttendanceRecord[] = []
-    Object.entries(todayStatuses).forEach(([pupilId, status]) => {
-      if (!status) return
-      const record: PupilAttendanceRecord = {
-        id: `${pupilId}-${createdAt}`,
-        pupilId,
-        classId: currentUser.classId || "",
-        staffEmail: currentUser.email || "",
-        date,
-        time,
-        status,
-        createdAt,
-      }
-      newRecords.push(record)
+    
+    const today = formatDate(new Date())
+    const promises = Object.entries(todayStatuses).map(async ([pupilId, status]) => {
+      // Find pupil name
+      const pupil = pupils.find(p => p.id === pupilId)
+      
+      return fetch("/api/admin/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: today,
+          studentId: pupilId,
+          studentName: pupil?.name || "Unknown",
+          classId: currentUser.classId,
+          status
+        })
+      })
     })
-    if (newRecords.length === 0) {
+
+    try {
+      await Promise.all(promises)
+      alert("Attendance saved successfully!")
+    } catch (e) {
+      console.error("Failed to save attendance", e)
+      alert("Failed to save attendance")
+    } finally {
       setIsSavingAttendance(false)
-      return
     }
-    const updated = [...pupilAttendance, ...newRecords]
-    setPupilAttendance(updated)
-    window.localStorage.setItem(PUPIL_ATTENDANCE_KEY, JSON.stringify(updated))
-    setIsSavingAttendance(false)
   }
 
   const handleLogout = () => { signOut(() => { router.push("/login?type=staff") }) }
+  
+  const today = formatDate(new Date())
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -197,10 +189,10 @@ export default function ClassAttendancePage() {
                 </Link>
                 <Link
                   href="/staff/my-attendance"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
                   onClick={() => setIsMobileNavOpen(false)}
                 >
-                  <User className="h-5 w-5" />
+                  <Clock className="h-5 w-5" />
                   My Attendance
                 </Link>
                 <Link
@@ -208,20 +200,28 @@ export default function ClassAttendancePage() {
                   className="flex items-center gap-2 text-primary"
                   onClick={() => setIsMobileNavOpen(false)}
                 >
-                  <Users className="h-5 w-5" />
+                  <Check className="h-5 w-5" />
                   Class Attendance
                 </Link>
                 <Link
                   href="/staff/daily-report"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
                   onClick={() => setIsMobileNavOpen(false)}
                 >
                   <BookOpen className="h-5 w-5" />
                   Daily Report
                 </Link>
                 <Link
+                  href="/staff/pupils"
+                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setIsMobileNavOpen(false)}
+                >
+                  <Users className="h-5 w-5" />
+                  My Pupils
+                </Link>
+                <Link
                   href="/staff/loan"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
                   onClick={() => setIsMobileNavOpen(false)}
                 >
                   <Banknote className="h-5 w-5" />
@@ -231,46 +231,63 @@ export default function ClassAttendancePage() {
             </nav>
           </SheetContent>
         </Sheet>
-        <div className="flex items-center gap-2">
-          <Link href="/staff/dashboard" className="flex items-center gap-2 font-semibold">
-            <Image
-              src="/logo.jpg"
-              alt="Bayhood Preparatory School logo"
-              width={220}
-              height={66}
-              className="h-14 w-auto"
-            />
+        <Link href="/staff/dashboard" className="mr-6 hidden md:flex">
+          <Image
+            src="/logo.jpg"
+            alt="Bayhood Preparatory School logo"
+            width={220}
+            height={66}
+            className="h-14 w-auto"
+          />
+        </Link>
+        <nav className="hidden gap-6 text-sm font-medium md:flex">
+          <Link href="/staff/dashboard" className="text-muted-foreground hover:text-foreground">
+            Overview
           </Link>
-        </div>
-        <div className="flex-1"></div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="relative h-8 flex items-center gap-2">
-              <User className="h-4 w-4" />
-              <span className="hidden md:inline-block">{currentUser?.email || "Staff Account"}</span>
-              <ChevronDown className="h-4 w-4 opacity-50" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
-            </DropdownMenuItem>
-            <Link href="/staff/loan">
-              <DropdownMenuItem>
-                <Banknote className="mr-2 h-4 w-4" />
-                <span>Loan Request</span>
+          <Link href="/staff/my-attendance" className="text-muted-foreground hover:text-foreground">
+            My Attendance
+          </Link>
+          <Link href="/staff/class-attendance" className="font-bold text-primary">
+            Class Attendance
+          </Link>
+          <Link href="/staff/daily-report" className="text-muted-foreground hover:text-foreground">
+            Daily Report
+          </Link>
+          <Link href="/staff/pupils" className="text-muted-foreground hover:text-foreground">
+            My Pupils
+          </Link>
+          <Link href="/staff/loan" className="text-muted-foreground hover:text-foreground">
+            Loan Request
+          </Link>
+        </nav>
+        <div className="ml-auto flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="icon" className="rounded-full">
+                <User className="h-5 w-5" />
+                <span className="sr-only">Toggle user menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-xs text-muted-foreground">{currentUser?.email}</DropdownMenuItem>
+              <DropdownMenuItem>Settings</DropdownMenuItem>
+              <DropdownMenuItem>Support</DropdownMenuItem>
+              <Link href="/staff/loan">
+                <DropdownMenuItem>
+                  <Banknote className="mr-2 h-4 w-4" />
+                  <span>Loan Request</span>
+                </DropdownMenuItem>
+              </Link>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
               </DropdownMenuItem>
-            </Link>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </header>
       <main className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-8">
         <div className="flex flex-col gap-2">
@@ -294,9 +311,9 @@ export default function ClassAttendancePage() {
               <BookOpen className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold">{assignedClass?.name || "No class"}</div>
+              <div className="text-xl font-bold">{currentUser?.classId || "No class"}</div>
               <p className="text-xs text-muted-foreground">
-                {assignedClass ? assignedClass.ageRange : "Set during login"}
+                Your currently assigned class
               </p>
             </CardContent>
           </Card>
@@ -306,7 +323,7 @@ export default function ClassAttendancePage() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold">{classPupils.length}</div>
+              <div className="text-xl font-bold">{pupils.length}</div>
               <p className="text-xs text-muted-foreground">Pupils you can mark attendance for</p>
             </CardContent>
           </Card>
@@ -319,7 +336,11 @@ export default function ClassAttendancePage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {classPupils.length === 0 ? (
+            {isLoading ? (
+              <div className="text-sm text-muted-foreground text-center py-4">
+                Loading pupils...
+              </div>
+            ) : pupils.length === 0 ? (
               <div className="text-sm text-muted-foreground">
                 No pupils found for your assigned class.
               </div>
@@ -335,7 +356,7 @@ export default function ClassAttendancePage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {classPupils.map((pupil) => {
+                      {pupils.map((pupil) => {
                         const status = todayStatuses[pupil.id]
                         return (
                           <TableRow key={pupil.id}>
@@ -367,6 +388,7 @@ export default function ClassAttendancePage() {
                                   size="sm"
                                   onClick={() => handleStatusChange(pupil.id, "Late")}
                                 >
+                                  <Clock className="mr-1 h-4 w-4" />
                                   Late
                                 </Button>
                               </div>
@@ -378,52 +400,18 @@ export default function ClassAttendancePage() {
                   </Table>
                 </div>
                 <div className="mt-4 flex justify-end">
-                  <Button type="button" onClick={handleSaveAttendance} disabled={isSavingAttendance}>
-                    {isSavingAttendance ? "Saving..." : "Save Attendance"}
+                  <Button onClick={handleSaveAttendance} disabled={isSavingAttendance || pupils.length === 0}>
+                    {isSavingAttendance ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Attendance"
+                    )}
                   </Button>
                 </div>
               </>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Class Attendance</CardTitle>
-            <CardDescription>Latest attendance you have recorded for this class.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recentPupilAttendance.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
-                No attendance records yet. Save attendance for your class to see it here.
-              </div>
-            ) : (
-              <div className="max-h-[320px] overflow-auto rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Pupil</TableHead>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Time</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {recentPupilAttendance.map((record) => {
-                      const pupil = pupilsData.find((s) => s.id === record.pupilId)
-                      return (
-                        <TableRow key={record.id}>
-                          <TableCell>{pupil?.name || "Unknown"}</TableCell>
-                          <TableCell className="text-muted-foreground">{record.pupilId}</TableCell>
-                          <TableCell>{record.status}</TableCell>
-                          <TableCell>{record.date}</TableCell>
-                          <TableCell>{record.time}</TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
             )}
           </CardContent>
         </Card>
