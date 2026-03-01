@@ -57,28 +57,29 @@ export default function PupilsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedClass, setSelectedClass] = useState(initialSelectedClass)
   const [pupils, setPupils] = useState<Pupil[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   
   useEffect(() => {
     fetchPupils()
   }, [])
 
   const fetchPupils = async () => {
+    setIsLoading(true)
     try {
       const res = await fetch("/api/admin/pupils")
       if (res.ok) {
         const data = await res.json()
-        // Map database fields to UI fields if necessary
-        // Assuming API returns { id, name, classId, ... } and UI expects { id, name, class, ... }
-        // We might need to map classId -> class name
         const mapped = data.map((p: any) => ({
             ...p,
-            class: p.classId, // Temporary mapping until we join with classes table
-            guardians: JSON.parse(p.guardians || "[]")
+            class: p.classId,
+            guardians: typeof p.guardians === 'string' ? JSON.parse(p.guardians) : p.guardians || []
         }))
         setPupils(mapped)
       }
     } catch (e) {
       console.error("Failed to fetch pupils", e)
+    } finally {
+      setIsLoading(false)
     }
   }
   const [isAddPupilOpen, setIsAddPupilOpen] = useState(false)
@@ -800,7 +801,13 @@ export default function PupilsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredPupils.length > 0 ? (
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="h-24 text-center">
+                          Loading pupils...
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredPupils.length > 0 ? (
                       filteredPupils.map((pupil, index) => (
                         <TableRow key={pupil.id}>
                           <TableCell className="font-medium">{index + 1}</TableCell>

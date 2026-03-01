@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { pupils } from "@/lib/schema";
 import { auth } from "@clerk/nextjs/server";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { pupilsData } from "@/lib/data";
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,6 +15,29 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const classId = searchParams.get("classId");
+
+    // Check if pupils table is empty
+    const countResult = await db.select({ count: sql<number>`count(*)` }).from(pupils);
+    const count = countResult[0].count;
+
+    if (count === 0) {
+      console.log("Seeding pupils database...");
+      const pupilsToInsert = pupilsData.map(p => ({
+        id: p.id,
+        name: p.name,
+        classId: p.class, // Map class name to classId for now
+        gender: p.gender,
+        dateOfBirth: p.dateOfBirth,
+        guardians: JSON.stringify(p.guardians),
+        enrollmentDate: p.enrollmentDate,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }));
+      
+      if (pupilsToInsert.length > 0) {
+        await db.insert(pupils).values(pupilsToInsert);
+      }
+    }
 
     let query = db.select().from(pupils);
     
