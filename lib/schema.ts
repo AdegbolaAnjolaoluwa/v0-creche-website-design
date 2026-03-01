@@ -86,6 +86,13 @@ export const dailyReports = sqliteTable('daily_reports', {
   createdAt: integer('created_at').notNull(),
 });
 
+export const parentStudentLinks = sqliteTable('parent_student_links', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(), // Clerk User ID
+  studentId: text('student_id').notNull(),
+  createdAt: integer('created_at').notNull(),
+});
+
 // Pupils Table
 export const pupils = sqliteTable('pupils', {
   id: text('id').primaryKey(),

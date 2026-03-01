@@ -21,6 +21,9 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+
 export default function ParentDashboard() {
   const router = useRouter();
   const { signOut } = useClerk();
@@ -30,6 +33,9 @@ export default function ParentDashboard() {
   const [pupil, setPupil] = useState<any>(null)
   const [results, setResults] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [linkPupilId, setLinkPupilId] = useState("")
+  const [isLinking, setIsLinking] = useState(false)
+  const [notLinked, setNotLinked] = useState(false)
 
   useEffect(() => {
     fetchDashboardData()
@@ -37,17 +43,48 @@ export default function ParentDashboard() {
 
   const fetchDashboardData = async () => {
     setIsLoading(true)
+    setNotLinked(false)
     try {
       const res = await fetch("/api/parent/dashboard")
       if (res.ok) {
         const data = await res.json()
-        setPupil(data.pupil)
-        setResults(data.results)
+        if (data.notLinked) {
+            setNotLinked(true)
+        } else {
+            setPupil(data.pupil)
+            setResults(data.results)
+        }
       }
     } catch (e) {
       console.error("Failed to fetch dashboard data", e)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleLinkPupil = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!linkPupilId) return
+
+    setIsLinking(true)
+    try {
+        const res = await fetch("/api/parent/dashboard", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pupilId: linkPupilId })
+        })
+
+        if (res.ok) {
+            alert("Child linked successfully!")
+            fetchDashboardData() // Refresh
+        } else {
+            const data = await res.json()
+            alert(data.error || "Failed to link child")
+        }
+    } catch (e) {
+        alert("Failed to link child. Please check connection.")
+    } finally {
+        setIsLinking(false)
     }
   }
 
@@ -86,21 +123,38 @@ export default function ParentDashboard() {
     )
   }
 
-  if (!pupil) {
+  if (notLinked || !pupil) {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50/50 p-4">
-            <Card className="w-full max-w-md text-center">
+            <Card className="w-full max-w-md">
                 <CardHeader>
-                    <CardTitle>No Pupil Found</CardTitle>
+                    <CardTitle>Link Your Child</CardTitle>
                     <CardDescription>
-                        We couldn&apos;t find a pupil linked to your account.
+                        Please enter your child's Pupil ID to access their dashboard.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="mb-4 text-sm text-muted-foreground">
-                        Please contact the school administrator to ensure your email address is correctly linked to your child&apos;s profile.
-                    </p>
-                    <Button onClick={handleLogout} variant="outline">Log out</Button>
+                    <form onSubmit={handleLinkPupil} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="pupilId">Pupil ID</Label>
+                            <Input 
+                                id="pupilId" 
+                                placeholder="e.g. BPS-001" 
+                                value={linkPupilId}
+                                onChange={(e) => setLinkPupilId(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <Button type="submit" className="w-full" disabled={isLinking}>
+                            {isLinking ? "Linking..." : "Link Child"}
+                        </Button>
+                    </form>
+                    <div className="mt-4 pt-4 border-t text-center">
+                        <Button onClick={handleLogout} variant="ghost" size="sm">
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Log out
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
         </div>

@@ -1,70 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { pupils, results } from "@/lib/schema";
+import { pupils, results, parentStudentLinks } from "@/lib/schema";
 import { auth } from "@clerk/nextjs/server";
-import { eq, like } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import { nanoid } from "nanoid";
 
+// GET: Fetch dashboard data (pupil, results) for linked child
 export async function GET(req: NextRequest) {
   try {
-    const { userId, sessionClaims } = await auth();
+    const { userId } = await auth();
     
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get email from session claims or fallback
-    const email = (sessionClaims?.primaryEmail as any)?.emailAddress || (sessionClaims as any)?.email;
+    // 1. Check for linked pupil
+    const link = await db.select().from(parentStudentLinks).where(eq(parentStudentLinks.userId, userId));
     
-    // For testing purposes, if no email is found (e.g. locally), assume parent@example.com if role is parent
-    const effectiveEmail = email || "parent@example.com";
-
-    // Fetch all pupils to find the one linked to this parent
-    // Note: In a real production app with many pupils, we would use a separate 'guardians' table or specific JSON query capabilities
-    const allPupils = await db.select().from(pupils);
-    
-    let linkedPupil = allPupils.find(p => {
-        try {
-            const guardians = JSON.parse(p.guardians);
-            return Array.isArray(guardians) && guardians.some((g: any) => g.email === effectiveEmail);
-        } catch {
-            return false;
-        }
-    });
-
-    // Fallback for demo: If logged in as parent@example.com and no pupil found, 
-    // force link to the first pupil (Agboola Jasmine) for demonstration
-    if (!linkedPupil && effectiveEmail === "parent@example.com") {
-        const targetPupil = allPupils.find(p => p.name === "Agboola Jasmine");
-        if (targetPupil) {
-            // Update this pupil to have the email
-            const guardians = JSON.parse(targetPupil.guardians);
-            if (Array.isArray(guardians) && guardians.length > 0) {
-                guardians[0].email = effectiveEmail;
-                await db.update(pupils)
-                    .set({ guardians: JSON.stringify(guardians) })
-                    .where(eq(pupils.id, targetPupil.id));
-                linkedPupil = { ...targetPupil, guardians: JSON.stringify(guardians) };
-            }
-        }
+    if (link.length === 0) {
+      return NextResponse.json({ notLinked: true });
     }
 
-    if (!linkedPupil) {
-        return NextResponse.json({ error: "No pupil found linked to your account" }, { status: 404 });
+    const studentId = link[0].studentId;
+    
+    // 2. Fetch Pupil Data
+    const pupilList = await db.select().from(pupils).where(eq(pupils.id, studentId));
+    if (pupilList.length === 0) {
+       // Should ideally delete broken link, but for now just return error
+       return NextResponse.json({ error: "Linked pupil not found" }, { status: 404 });
     }
+    const pupil = pupilList[0];
 
-    // Fetch results for this pupil
+    // 3. Fetch Results
     const pupilResults = await db.select()
         .from(results)
-        .where(eq(results.studentId, linkedPupil.id));
+        .where(eq(results.studentId, studentId))
+        .orderBy(results.createdAt); // Order by date created
 
-    // Format data for dashboard
-    // We need to group results by term if needed, or just send the raw list
-    // The UI expects a specific structure, let's try to match it or send raw and let UI adapt
-    
     return NextResponse.json({
         pupil: {
-            ...linkedPupil,
-            guardians: JSON.parse(linkedPupil.guardians)
+            ...pupil,
+            guardians: JSON.parse(pupil.guardians)
         },
         results: pupilResults.map(r => ({
             ...r,
@@ -76,4 +52,50 @@ export async function GET(req: NextRequest) {
     console.error("Error fetching parent dashboard data:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
+}
+
+// POST: Link a pupil to the parent account using Pupil ID
+export async function POST(req: NextRequest) {
+    try {
+        const { userId } = await auth();
+        if (!userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const body = await req.json();
+        const { pupilId } = body;
+
+        if (!pupilId) {
+            return NextResponse.json({ error: "Pupil ID is required" }, { status: 400 });
+        }
+
+        // 1. Verify Pupil Exists
+        const existingPupil = await db.select().from(pupils).where(eq(pupils.id, pupilId));
+        if (existingPupil.length === 0) {
+            return NextResponse.json({ error: "Pupil ID not found. Please check and try again." }, { status: 404 });
+        }
+
+        // 2. Create Link
+        // Check if link already exists
+        const existingLink = await db.select().from(parentStudentLinks).where(eq(parentStudentLinks.userId, userId));
+        if (existingLink.length > 0) {
+            // Update existing link or reject? Let's update for now to allow switching/correction
+            await db.update(parentStudentLinks)
+                .set({ studentId: pupilId })
+                .where(eq(parentStudentLinks.userId, userId));
+        } else {
+            await db.insert(parentStudentLinks).values({
+                id: nanoid(),
+                userId,
+                studentId: pupilId,
+                createdAt: Date.now()
+            });
+        }
+
+        return NextResponse.json({ success: true, message: "Successfully linked to pupil" });
+
+    } catch (error) {
+        console.error("Error linking pupil:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
 }
