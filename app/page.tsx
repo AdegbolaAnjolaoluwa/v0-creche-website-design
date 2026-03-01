@@ -34,13 +34,8 @@ export default function Home() {
             </Link>
           </nav>
           <div className="flex items-center gap-4">
-            <Link href="/login?type=staff">
-              <Button variant="outline" size="sm">
-                Staff Login
-              </Button>
-            </Link>
-            <Link href="/login?type=parent">
-              <Button size="sm">Parent Portal</Button>
+            <Link href="/login">
+              <Button size="sm">Login</Button>
             </Link>
           </div>
         </div>
@@ -63,9 +58,9 @@ export default function Home() {
                   Our dedicated staff and innovative curriculum ensure your child gets the best start in life.
                 </p>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Link href="/login?type=parent">
+                  <Link href="/login">
                     <Button className="w-full min-[400px]:w-auto">
-                      View Results
+                      Get Started
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>

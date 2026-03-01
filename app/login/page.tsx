@@ -65,29 +65,11 @@ export default function LoginPage() {
     }
   }, [isSignedIn, user, router, unauthorized])
 
-  // Login State: "selection", "staff", "parent"
-  const [loginView, setLoginView] = useState<"selection" | "staff" | "parent">("selection")
+  // Login State: "login" only
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-  const [isFixing, setIsFixing] = useState(false)
-
-  // Staff State
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-
-  // Parent State (Note: We are switching to Email for parents too as Invitations use Email)
-  const [parentEmail, setParentEmail] = useState("")
-  const [parentPassword, setParentPassword] = useState("")
-
-  useEffect(() => {
-    if (typeParam === "parent") {
-      setLoginView("parent")
-    } else if (typeParam === "staff") {
-      setLoginView("staff")
-    } else {
-      setLoginView("selection")
-    }
-  }, [typeParam])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -96,67 +78,174 @@ export default function LoginPage() {
     setIsLoading(true)
     setError("")
 
-    const identifier = (loginView === "staff" ? email : parentEmail).trim()
-    const pass = loginView === "staff" ? password : parentPassword
-
-    if (!identifier || !pass) {
-      setError("Please enter both email and password.")
-      setIsLoading(false)
-      return
-    }
-
     try {
       const result = await signIn.create({
-        identifier,
-        password: pass,
+        identifier: email,
+        password: password,
       })
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId })
-        // Redirect logic is handled by Clerk or we can force it
-        // Check the role to decide where to go (optional, as middleware handles basic protection)
-        // But for better UX, let's redirect to the right dashboard
-
-        // Wait a moment for session to propagate
-        setTimeout(() => {
-          if (loginView === "staff") {
-            // Check if it's an admin (this is a client-side hint, middleware is the real guard)
-            if (identifier.toLowerCase().includes("admin") || identifier.toLowerCase() === "anjeesax@gmail.com") {
-              router.push("/admin/dashboard")
-            } else {
-              router.push("/staff/dashboard")
-            }
-          } else {
-            router.push("/parent/dashboard")
-          }
-        }, 500)
+        // Redirect logic is handled by useEffect or Middleware mostly, 
+        // but we can force a check here if needed.
+        // Actually, the useEffect above will catch the new user state and redirect.
       } else {
         console.log(result)
-        // Check for specific statuses to give better feedback
-        if (result.status === "needs_first_factor") {
-          setError("Login incomplete. Additional verification required (e.g. Email Code).")
-        } else if (result.status === "needs_second_factor") {
-          setError("Login incomplete. Two-factor authentication required.")
-        } else if (result.status === "needs_identifier") {
-          setError("Login incomplete. Please provide your email.")
-        } else {
-          setError(`Login incomplete. Status: ${result.status}`)
-        }
+        setError("Something went wrong during sign in.")
       }
     } catch (err: any) {
       console.error("Login error:", err)
-      const errors = err.errors || []
-      const error = errors[0]
+      setError(err.errors?.[0]?.message || "Invalid email or password.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
-      if (error?.code === "form_identifier_not_found") {
-        setError("Account not found. Please contact your administrator.")
-      } else if (error?.code === "form_password_incorrect") {
-        setError("Incorrect password. Please try again.")
-      } else if (error?.code === "too_many_attempts") {
-        setError("Too many attempts. Please try again later.")
+  // Handle Unauthorized State explicitly
+  if (unauthorized && isSignedIn) {
+     return (
+         <div className={`min-h-screen flex items-center justify-center bg-[#FDF6E3] p-4 font-sans ${inter.variable} ${fredoka.variable}`}>
+             <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden border-4 border-white">
+                 <div className="p-8 text-center space-y-6">
+                     <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                         <AlertCircle className="w-8 h-8 text-red-500" />
+                     </div>
+                     <h2 className="text-2xl font-bold text-slate-800 font-display">Access Denied</h2>
+                     <p className="text-slate-500">
+                         You do not have permission to access the requested page.
+                         Please sign in with the correct account or contact support.
+                     </p>
+                     <Button 
+                         variant="destructive" 
+                         className="w-full rounded-xl py-6 font-bold text-lg"
+                         onClick={() => signOut(() => router.push("/login"))}
+                     >
+                         Sign Out
+                     </Button>
+                 </div>
+             </div>
+         </div>
+     )
+  }
+
+  return (
+    <div className={`min-h-screen flex items-center justify-center bg-[#FDF6E3] p-4 font-sans ${inter.variable} ${fredoka.variable}`}>
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden border-4 border-white relative">
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#FF9F1C] via-[#FFD700] to-[#2EC4B6]"></div>
+        
+        <div className="p-8">
+          <div className="flex justify-center mb-8">
+            <Link href="/">
+                <Image
+                  src="/logo.jpg"
+                  alt="School logo"
+                  width={180}
+                  height={54}
+                  className="h-16 w-auto"
+                />
+            </Link>
+          </div>
+
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <h1 className="text-2xl font-bold text-slate-800 font-display">Welcome Back!</h1>
+              <p className="text-slate-500">Sign in to your account</p>
+            </div>
+
+            {error && (
+              <Alert variant="destructive" className="bg-red-50 text-red-800 border-red-200">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 ml-1">Email Address</label>
+                <div className="relative">
+                  <AtSign className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-slate-100 focus:border-[#2EC4B6] focus:outline-none transition-colors bg-slate-50"
+                    placeholder="Enter your email"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-bold text-slate-700 ml-1">Password</label>
+                  <Link href="/forgot-password" area-label="Forgot Password?" className="text-xs font-bold text-[#FF9F1C] hover:underline">
+                    Forgot?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-slate-100 focus:border-[#2EC4B6] focus:outline-none transition-colors bg-slate-50"
+                    placeholder="Enter your password"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-[#2EC4B6] hover:bg-[#25A094] text-white rounded-xl py-6 font-bold text-lg shadow-lg shadow-[#2EC4B6]/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Signing in...
+                  </>
+                ) : (
+                  <>
+                    Sign In <ArrowRight className="ml-2 h-5 w-5" />
+                  </>
+                )}
+              </Button>
+            </form>
+          </div>
+        </div>
+        
+        <div className="bg-slate-50 p-4 text-center border-t border-slate-100">
+          <p className="text-sm text-slate-500">
+            Don&apos;t have an account?{" "}
+            <Link href="/sign-up" className="font-bold text-[#FF9F1C] hover:underline">
+              Register here
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+    try {
+      const result = await signIn.create({
+        identifier: email,
+        password: password,
+      })
+
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId })
+        // Redirect logic is handled by useEffect or Middleware mostly, 
+        // but we can force a check here if needed.
+        // Actually, the useEffect above will catch the new user state and redirect.
       } else {
-        setError(error?.longMessage || "An unexpected error occurred.")
+        console.log(result)
+        setError("Something went wrong during sign in.")
       }
+    } catch (err: any) {
+      console.error("Login error:", err)
+      setError(err.errors?.[0]?.message || "Invalid email or password.")
     } finally {
       setIsLoading(false)
     }
