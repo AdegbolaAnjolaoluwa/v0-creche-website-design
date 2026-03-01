@@ -5,7 +5,7 @@ export async function register() {
     // Server-side instrumentation
     Sentry.init({
       dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-      tracesSampleRate: 1,
+      tracesSampleRate: 0.1,
       debug: false,
     });
   }
@@ -14,7 +14,7 @@ export async function register() {
     // Edge-side instrumentation
     Sentry.init({
       dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-      tracesSampleRate: 1,
+      tracesSampleRate: 0.1,
       debug: false,
     });
   }
