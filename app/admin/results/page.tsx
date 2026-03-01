@@ -29,34 +29,6 @@ import {
 
 import { resultsData, type ResultRecord } from "@/lib/data"
 
-const RESULTS_STORAGE_KEY = "adminResults"
-
-const loadResultsFromStorage = (): ResultRecord[] => {
-  if (typeof window === "undefined") return resultsData
-  const stored = window.localStorage.getItem(RESULTS_STORAGE_KEY)
-  if (!stored) {
-    window.localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(resultsData))
-    return resultsData
-  }
-  try {
-    const parsed = JSON.parse(stored)
-    if (!Array.isArray(parsed)) {
-      return resultsData
-    }
-    // Migration: ensure old studentName/studentId keys are mapped to pupilName/pupilId
-    const migrated = parsed
-      .filter(item => item !== null && item !== undefined)
-      .map((item: any) => ({
-        ...item,
-        pupilId: item.pupilId || item.studentId || "",
-        pupilName: item.pupilName || item.studentName || "",
-      }))
-    return migrated as ResultRecord[]
-  } catch {
-    return resultsData
-  }
-}
-
 export const calculateAttendanceScore = (attendancePercentage: number) => {
   if (attendancePercentage >= 95) return 10
   if (attendancePercentage >= 90) return 8
@@ -128,15 +100,23 @@ export default function ResultsPage() {
   //   setIsDeleteOpen(true)
   // }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!resultToDelete) return
-    setResults((prev) => {
-      const updated = prev.filter((result) => result.id !== resultToDelete.id)
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(updated))
-      }
-      return updated
-    })
+    // In a real app, delete from DB
+    // For now just update local state and maybe call API if implemented
+    // setResults((prev) => prev.filter((result) => result.id !== resultToDelete.id))
+    
+    // Optimistic update
+    const updated = results.filter((result) => result.id !== resultToDelete.id)
+    setResults(updated)
+    
+    // Call delete API (mock)
+    try {
+        await fetch(`/api/admin/results?id=${resultToDelete.id}`, { method: 'DELETE' })
+    } catch (e) {
+        console.error("Failed to delete", e)
+    }
+
     setIsDeleteOpen(false)
     setResultToDelete(null)
   }

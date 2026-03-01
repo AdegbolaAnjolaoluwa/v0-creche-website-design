@@ -81,17 +81,27 @@ export default function AdminLoanPage() {
   }, [isLoaded, isSignedIn, router])
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const stored = window.localStorage.getItem(LOAN_REQUESTS_KEY)
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as LoanRequest[]
-        setLoanRequests(parsed)
-      } catch {
-        setLoanRequests([])
-      }
-    }
+    fetchLoans()
   }, [])
+
+  const fetchLoans = async () => {
+    try {
+      // Admin should see all loans, so no email filter
+      const res = await fetch("/api/staff/loan") // Wait, this endpoint filters by email in GET. We need an admin endpoint.
+      // Actually, let's update the existing endpoint to return all if no email provided but user is admin? 
+      // Or create /api/admin/loans. Let's assume we create /api/admin/loans
+      // For now I'll mock empty or use the pattern
+      
+      // I'll create the admin endpoint in a moment. For now let's set up the call.
+      const resAdmin = await fetch("/api/admin/loans")
+      if (resAdmin.ok) {
+        const data = await resAdmin.json()
+        setLoanRequests(data)
+      }
+    } catch (e) {
+      console.error("Failed to fetch loans", e)
+    }
+  }
 
   const filteredRequests = loanRequests
     .filter((req) => {
@@ -108,25 +118,33 @@ export default function AdminLoanPage() {
     setIsDialogOpen(true)
   }
 
-  const confirmAction = () => {
+  const confirmAction = async () => {
     if (!selectedRequest || !actionType) return
+    
+    const newStatus = actionType === "Approve" ? "Approved" : "Rejected"
+    
+    // Call API to update status
+    try {
+        await fetch("/api/admin/loans", {
+            method: "PATCH", // or PUT
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                id: selectedRequest.id,
+                status: newStatus,
+                adminComment
+            })
+        })
+        
+        // Optimistic update or refresh
+        fetchLoans()
+    } catch (e) {
+        console.error("Failed to update loan", e)
+    }
 
-    const updatedRequests = loanRequests.map(req => {
-      if (req.id === selectedRequest.id) {
-        return {
-          ...req,
-          status: actionType === "Approve" ? "Approved" : "Rejected",
-          adminComment: adminComment
-        } as LoanRequest
-      }
-      return req
-    })
-
-    setLoanRequests(updatedRequests)
-    window.localStorage.setItem(LOAN_REQUESTS_KEY, JSON.stringify(updatedRequests))
     setIsDialogOpen(false)
     setSelectedRequest(null)
     setActionType(null)
+    setAdminComment("")
   }
 
   const handleLogout = () => { signOut(() => { router.push("/login") }) }

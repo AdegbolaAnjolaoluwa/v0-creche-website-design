@@ -95,11 +95,11 @@ export default function AdminDailyReportsPage() {
             const content = typeof r.content === 'string' ? JSON.parse(r.content) : r.content
             return {
                 ...r,
-                topicsTaught: content.topicsTaught,
-                incidentReport: content.incidentReport,
-                homework: content.homework,
-                generalComment: content.generalComment,
-                staffEmail: r.submittedBy // Mapping for now
+                topicsTaught: content?.topicsTaught,
+                incidentReport: content?.incidentReport,
+                homework: content?.homework,
+                generalComment: content?.generalComment,
+                staffEmail: r.submittedBy
             }
         })
         setDailyReports(mapped)

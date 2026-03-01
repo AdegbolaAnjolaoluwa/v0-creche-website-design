@@ -47,40 +47,56 @@ export default function PupilProfilePage() {
   const [results, setResults] = useState<ResultRecord[]>([])
 
   useEffect(() => {
-    // 1. Find Pupil
-    const foundPupil = pupilsData.find(p => p.id === pupilId)
-    if (!foundPupil) {
-      // In a real app, you might fetch from API or redirect
-      // For now, if not found in static data, check if we should redirect
-    }
-    setPupil(foundPupil || null)
+    const fetchData = async () => {
+        // 1. Find Pupil (Mock for now, ideally API)
+        const foundPupil = pupilsData.find(p => p.id === pupilId)
+        setPupil(foundPupil || null)
 
-    // 2. Load Attendance
-    if (typeof window !== "undefined") {
-      const storedAttendance = window.localStorage.getItem(PUPIL_ATTENDANCE_KEY)
-      if (storedAttendance) {
+        // 2. Load Attendance from API
         try {
-          const parsed = JSON.parse(storedAttendance) as PupilAttendanceRecord[]
-          const pupilAttendance = parsed.filter(a => a.pupilId === pupilId)
-          setAttendance(pupilAttendance.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
-        } catch {
-          setAttendance([])
+            const res = await fetch("/api/admin/attendance")
+            if (res.ok) {
+                const data = await res.json()
+                const pupilAttendance = data
+                    .filter((a: any) => a.studentId === pupilId)
+                    .map((a: any) => ({
+                        id: a.id,
+                        pupilId: a.studentId,
+                        classId: a.classId,
+                        staffEmail: a.markedBy,
+                        date: a.date,
+                        time: "00:00",
+                        status: a.status,
+                        createdAt: new Date(a.timestamp).toISOString()
+                    }))
+                setAttendance(pupilAttendance.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()))
+            }
+        } catch (e) {
+            console.error("Failed to fetch attendance", e)
         }
-      }
 
-      // 3. Load Results
-      const storedResults = window.localStorage.getItem(RESULTS_STORAGE_KEY)
-      let allResults = resultsData
-      if (storedResults) {
+        // 3. Load Results from API
         try {
-          allResults = JSON.parse(storedResults)
-        } catch {
-          allResults = resultsData
+            const res = await fetch("/api/admin/results")
+            if (res.ok) {
+                const data = await res.json()
+                const pupilResults = data
+                    .filter((r: any) => r.studentId === pupilId)
+                    .map((r: any) => ({
+                        ...r,
+                        class: r.classId,
+                        pupilName: r.studentName,
+                        pupilId: r.studentId,
+                        date: new Date(r.updatedAt).toISOString().split('T')[0]
+                    }))
+                setResults(pupilResults.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()))
+            }
+        } catch (e) {
+            console.error("Failed to fetch results", e)
         }
-      }
-      const pupilResults = allResults.filter(r => r.pupilId === pupilId)
-      setResults(pupilResults.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
     }
+    
+    fetchData()
   }, [pupilId])
 
   if (!pupil) {

@@ -79,66 +79,19 @@ type LoanRequest = {
 }
 
 const loadResultsFromStorage = (): ResultRecord[] => {
-  if (typeof window === "undefined") return resultsData
-  const stored = window.localStorage.getItem(RESULTS_STORAGE_KEY)
-  if (!stored) {
-    window.localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(resultsData))
-    return resultsData
-  }
-  try {
-    const parsed = JSON.parse(stored) as ResultRecord[]
-    if (!Array.isArray(parsed)) {
-      return resultsData
-    }
-    return parsed
-  } catch {
-    return resultsData
-  }
+  return resultsData
 }
 
 const loadPupilAttendanceFromStorage = (): PupilAttendanceRecord[] => {
-  if (typeof window === "undefined") return []
-  const stored = window.localStorage.getItem(PUPIL_ATTENDANCE_KEY)
-  if (!stored) return []
-  try {
-    const parsed = JSON.parse(stored) as PupilAttendanceRecord[]
-    if (!Array.isArray(parsed)) {
-      return []
-    }
-    return parsed
-  } catch {
-    return []
-  }
+  return []
 }
 
 const loadDailyReportsFromStorage = (): DailyReport[] => {
-  if (typeof window === "undefined") return []
-  const stored = window.localStorage.getItem(DAILY_REPORTS_KEY)
-  if (!stored) return []
-  try {
-    const parsed = JSON.parse(stored) as DailyReport[]
-    if (!Array.isArray(parsed)) {
-      return []
-    }
-    return parsed
-  } catch {
-    return []
-  }
+  return []
 }
 
 const loadLoanRequestsFromStorage = (): LoanRequest[] => {
-  if (typeof window === "undefined") return []
-  const stored = window.localStorage.getItem(LOAN_REQUESTS_KEY)
-  if (!stored) return []
-  try {
-    const parsed = JSON.parse(stored) as LoanRequest[]
-    if (!Array.isArray(parsed)) {
-      return []
-    }
-    return parsed
-  } catch {
-    return []
-  }
+  return []
 }
 
 export default function AdminDashboard() {

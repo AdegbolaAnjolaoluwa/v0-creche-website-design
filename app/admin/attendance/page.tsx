@@ -100,38 +100,32 @@ export default function AdminAttendancePage() {
   const fetchAttendance = async () => {
     setIsLoading(true)
     try {
-      // Fetch pupil attendance from new API
-      const res = await fetch("/api/admin/attendance")
-      if (res.ok) {
-        const data = await res.json()
-        const mapped = data.map((r: any) => ({
-            ...r,
-            pupilId: r.studentId,
-            time: new Date(r.timestamp).toLocaleTimeString()
-        }))
-        setPupilAttendance(mapped)
-      }
-      
-      // Keep other localStorage for now until migrated
-      if (typeof window !== "undefined") {
-        const storedStaff = window.localStorage.getItem(STAFF_ATTENDANCE_KEY)
-        const storedReports = window.localStorage.getItem(DAILY_REPORTS_KEY)
-        
-        if (storedStaff) {
-          try {
-            setStaffAttendance(JSON.parse(storedStaff))
-          } catch {}
+        // Fetch Pupil Attendance
+        const resPupil = await fetch("/api/admin/attendance")
+        if (resPupil.ok) {
+            const data = await resPupil.json()
+            const mapped = data.map((r: any) => ({
+                id: r.id,
+                pupilId: r.studentId,
+                classId: r.classId,
+                staffEmail: r.markedBy,
+                date: r.date,
+                time: "00:00", // Default as DB stores only date for now
+                status: r.status,
+                createdAt: new Date(r.timestamp).toISOString()
+            }))
+            setPupilAttendance(mapped)
         }
-        if (storedReports) {
-          try {
-            setDailyReports(JSON.parse(storedReports))
-          } catch {}
-        }
-      }
+
+        // Fetch Staff Attendance (We need a new admin endpoint or reuse staff one if admin allows)
+        // Let's create a quick admin endpoint for all staff attendance or reuse the pattern
+        // For now, I'll mock it empty or we need to implement GET /api/admin/staff-attendance
+        setStaffAttendance([]) 
+
     } catch (e) {
-      console.error("Failed to fetch attendance", e)
+        console.error("Failed to fetch attendance", e)
     } finally {
-      setIsLoading(false)
+        setIsLoading(false)
     }
   }
 

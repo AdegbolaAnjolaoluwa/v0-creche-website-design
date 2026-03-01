@@ -44,28 +44,15 @@ export default function ClassesPage() {
 
   const [staffAssignments, setStaffAssignments] = useState<Record<string, { name: string, email: string }>>({})
 
+  // Remove local storage logic for now
+  /*
   useState(() => {
     if (typeof window !== "undefined") {
       const stored = window.localStorage.getItem("staffClassAssignments")
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored)
-          // Migration: handle string format if exists
-          const migrated: Record<string, { name: string, email: string }> = {}
-          Object.keys(parsed).forEach(key => {
-            if (typeof parsed[key] === 'string') {
-              migrated[key] = { name: "", email: parsed[key] }
-            } else {
-              migrated[key] = parsed[key]
-            }
-          })
-          setStaffAssignments(migrated)
-        } catch {
-          setStaffAssignments({})
-        }
-      }
+      // ...
     }
   })
+  */
 
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

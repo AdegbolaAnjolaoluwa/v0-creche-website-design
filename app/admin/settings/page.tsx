@@ -77,29 +77,13 @@ export default function SettingsPage() {
   const [isLoadingUsers, setIsLoadingUsers] = useState(false)
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
 
-  const [staffAssignments, setStaffAssignments] = useState<Record<string, StaffAssignment>>(() => {
-    if (typeof window !== "undefined") {
-      const stored = window.localStorage.getItem(STAFF_ASSIGNMENTS_KEY)
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored)
-          // Migration: if it's still old string format, map it
-          const migrated: Record<string, StaffAssignment> = {}
-          Object.keys(parsed).forEach(key => {
-            if (typeof parsed[key] === 'string') {
-              migrated[key] = { name: "", email: parsed[key] }
-            } else {
-              migrated[key] = parsed[key]
-            }
-          })
-          return migrated
-        } catch {
-          return {}
-        }
-      }
-    }
-    return {}
-  })
+  const [staffAssignments, setStaffAssignments] = useState<Record<string, StaffAssignment>>({})
+
+  useEffect(() => {
+    // Ideally fetch from DB here
+    // For now, we will just use empty or mock if needed
+    // In a real app: fetchStaffAssignments()
+  }, [])
 
   useEffect(() => {
     fetchUsers()
@@ -179,9 +163,9 @@ export default function SettingsPage() {
     setIsLoading(true)
     
     // Save staff assignments to localStorage (keep as backup/cache)
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(STAFF_ASSIGNMENTS_KEY, JSON.stringify(staffAssignments))
-    }
+    // if (typeof window !== "undefined") {
+    //   window.localStorage.setItem(STAFF_ASSIGNMENTS_KEY, JSON.stringify(staffAssignments))
+    // }
 
     try {
       // Sync assignments to Clerk Metadata

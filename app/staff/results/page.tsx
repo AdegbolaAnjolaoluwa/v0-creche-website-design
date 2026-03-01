@@ -23,38 +23,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 import { classesData, resultsData, type ResultRecord } from "@/lib/data"
 
-type CurrentUser = {
-  role: string
-  email?: string
-  classId?: string
-}
-
-const RESULTS_STORAGE_KEY = "adminResults"
-
-const loadResultsFromStorage = (): ResultRecord[] => {
-  if (typeof window === "undefined") return resultsData
-  const stored = window.localStorage.getItem(RESULTS_STORAGE_KEY)
-  if (!stored) {
-    window.localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(resultsData))
-    return resultsData
-  }
-  try {
-    const parsed = JSON.parse(stored)
-    if (!Array.isArray(parsed)) {
-      return resultsData
-    }
-    // Migration: ensure old studentName/studentId keys are mapped to pupilName/pupilId
-    const migrated = parsed.map((item: any) => ({
-      ...item,
-      pupilId: item.pupilId || item.studentId || "",
-      pupilName: item.pupilName || item.studentName || "",
-    }))
-    return migrated as ResultRecord[]
-  } catch {
-    return resultsData
-  }
-}
-
 export default function StaffResultsPage() {
   const { signOut } = useClerk()
   const { user, isLoaded, isSignedIn } = useUser()
@@ -79,9 +47,27 @@ export default function StaffResultsPage() {
       router.push("/login?type=staff")
       return
     }
-    const loaded = loadResultsFromStorage()
-    setResults(loaded)
+    fetchResults()
   }, [isLoaded, isSignedIn, router])
+
+  const fetchResults = async () => {
+    try {
+      const res = await fetch("/api/admin/results")
+      if (res.ok) {
+        const data = await res.json()
+        const mapped = data.map((r: any) => ({
+            ...r,
+            class: r.classId,
+            pupilName: r.studentName,
+            pupilId: r.studentId,
+            date: new Date(r.updatedAt).toISOString().split('T')[0]
+        }))
+        setResults(mapped)
+      }
+    } catch (e) {
+      console.error("Failed to fetch results", e)
+    }
+  }
 
   const assignedClassName = useMemo(() => {
     if (!currentUser) return null
