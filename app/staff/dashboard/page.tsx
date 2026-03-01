@@ -166,32 +166,63 @@ export default function StaffDashboard() {
 
   const [today, setToday] = useState("")
   const [isSignInClosed, setIsSignInClosed] = useState(false)
+  const [dashboardData, setDashboardData] = useState({
+    attendanceMarked: false,
+    pupilCount: 0,
+    pendingLoans: 0,
+    recentReports: [] as DailyReport[]
+  })
 
   useEffect(() => {
     setToday(formatDate(new Date()))
     setIsSignInClosed(isAfterSignInCutoff())
   }, [])
 
+  useEffect(() => {
+    if (currentUser?.email) {
+      fetchDashboardData()
+    }
+  }, [currentUser])
+
+  const fetchDashboardData = async () => {
+    try {
+      const query = new URLSearchParams({
+        email: currentUser?.email || "",
+        classId: currentUser?.classId || ""
+      })
+      const res = await fetch(`/api/staff/dashboard?${query}`)
+      if (res.ok) {
+        const data = await res.json()
+        setDashboardData(data)
+      }
+    } catch (e) {
+      console.error("Failed to fetch dashboard data", e)
+    }
+  }
+
+  // Use API data where applicable, fallback to local logic if needed
+  const attendanceMarked = dashboardData.attendanceMarked
+  const pupilCount = dashboardData.pupilCount
+  const pendingLoanCount = dashboardData.pendingLoans
+  const myReports = dashboardData.recentReports.map((r: any) => {
+      const content = typeof r.content === 'string' ? JSON.parse(r.content) : r.content
+      return {
+          ...r,
+          topicsTaught: content.topicsTaught,
+          incidentReport: content.incidentReport,
+          homework: content.homework,
+          generalComment: content.generalComment,
+          staffEmail: r.submittedBy // Mapping
+      }
+  })
+
+  // Keep these for now if used elsewhere in UI, but primary metrics come from API
   const todayStaffAttendance = useMemo(() => {
     if (!currentUser || !today) return []
     return staffAttendance.filter((record) => record.staffEmail === currentUser.email && record.date === today)
   }, [currentUser, staffAttendance, today])
 
-  const myReports = useMemo(() => {
-    if (!currentUser) return []
-    const reports = dailyReports
-      .filter((report) => report.staffEmail === currentUser.email && report.classId === currentUser.classId)
-      .slice()
-      .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
-    return reports.slice(0, 10)
-  }, [currentUser, dailyReports])
-
   const handleLogout = () => { signOut(() => { router.push("/login") }) }
-
-  const pendingLoanCount = useMemo(() => {
-    if (!currentUser) return 0
-    return loanRequests.filter(req => req.staffEmail === currentUser.email && req.status === "Pending").length
-  }, [currentUser, loanRequests])
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50/50">

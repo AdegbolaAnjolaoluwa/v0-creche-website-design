@@ -69,12 +69,14 @@ export const calculateFinalScore = (academicScore: number, attendanceScore: numb
 
 export default function ResultsPage() {
   const [results, setResults] = useState<ResultRecord[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   
   useEffect(() => {
     fetchResults()
   }, [])
 
   const fetchResults = async () => {
+    setIsLoading(true)
     try {
       const res = await fetch("/api/admin/results")
       if (res.ok) {
@@ -90,6 +92,8 @@ export default function ResultsPage() {
       }
     } catch (e) {
       console.error("Failed to fetch results", e)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -379,7 +383,13 @@ export default function ResultsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredResults.length > 0 ? (
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="h-24 text-center">
+                          Loading results...
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredResults.length > 0 ? (
                       filteredResults.map((result) => (
                         <TableRow key={result.id}>
                           <TableCell className="font-medium">{result.pupilId}</TableCell>

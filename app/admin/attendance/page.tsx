@@ -85,6 +85,7 @@ export default function AdminAttendancePage() {
   const [filterStaffEmail, setFilterStaffEmail] = useState("")
   const [editingRecords, setEditingRecords] = useState<Record<string, PupilAttendanceRecord["status"]>>({})
   const [dailyReports, setDailyReports] = useState<DailyReport[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -97,6 +98,7 @@ export default function AdminAttendancePage() {
   }, [])
 
   const fetchAttendance = async () => {
+    setIsLoading(true)
     try {
       // Fetch pupil attendance from new API
       const res = await fetch("/api/admin/attendance")
@@ -128,6 +130,8 @@ export default function AdminAttendancePage() {
       }
     } catch (e) {
       console.error("Failed to fetch attendance", e)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -533,7 +537,11 @@ export default function AdminAttendancePage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                {filteredPupilAttendance.length === 0 ? (
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-24">
+                    <p className="text-muted-foreground">Loading attendance records...</p>
+                  </div>
+                ) : filteredPupilAttendance.length === 0 ? (
                   <div className="text-sm text-muted-foreground">
                     No pupil attendance records match the selected filters.
                   </div>

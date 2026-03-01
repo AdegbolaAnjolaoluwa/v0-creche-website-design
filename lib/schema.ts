@@ -45,6 +45,7 @@ export const classes = sqliteTable('classes', {
 export const loanRequests = sqliteTable('loan_requests', {
   id: text('id').primaryKey(),
   staffId: text('staff_id').notNull(),
+  staffEmail: text('staff_email'),
   staffName: text('staff_name').notNull(),
   amount: integer('amount').notNull(),
   reason: text('reason').notNull(),

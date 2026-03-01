@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { results } from "@/lib/schema";
 import { auth } from "@clerk/nextjs/server";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { resultsData } from "@/lib/data";
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,6 +16,35 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const classId = searchParams.get("classId");
     const term = searchParams.get("term");
+
+    // Check if results table is empty
+    const countResult = await db.select({ count: sql<number>`count(*)` }).from(results);
+    const count = countResult[0].count;
+
+    if (count === 0) {
+      console.log("Seeding results database...");
+      const resultsToInsert = resultsData.map(r => ({
+        id: r.id,
+        studentId: r.pupilId || r.studentId || nanoid(),
+        studentName: r.pupilName || r.studentName,
+        classId: r.class, // Map class name to classId for now
+        term: r.term,
+        academicYear: r.academicYear || "2023/2024",
+        subjects: JSON.stringify(r.subjects || []),
+        totalScore: r.totalScore,
+        averageScore: r.averageScore,
+        grade: r.grade,
+        teacherComment: r.teacherComment,
+        headTeacherComment: r.headTeacherComment,
+        status: r.status,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }));
+      
+      if (resultsToInsert.length > 0) {
+        await db.insert(results).values(resultsToInsert);
+      }
+    }
 
     let query = db.select().from(results);
     
@@ -49,7 +79,18 @@ export async function POST(req: NextRequest) {
     
     const newResult = {
       id: nanoid(),
-      ...body,
+      studentId: body.studentId,
+      studentName: body.studentName,
+      classId: body.classId,
+      term: body.term,
+      academicYear: body.academicYear,
+      subjects: JSON.stringify(body.subjects),
+      totalScore: body.totalScore,
+      averageScore: body.averageScore,
+      grade: body.grade,
+      teacherComment: body.teacherComment,
+      headTeacherComment: body.headTeacherComment,
+      status: body.status,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };

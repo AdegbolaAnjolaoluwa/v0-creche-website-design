@@ -73,6 +73,7 @@ export default function AdminDailyReportsPage() {
   const [filterDate, setFilterDate] = useState("")
   const [filterClassId, setFilterClassId] = useState<string>("all")
   const [searchTerm, setSearchTerm] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -81,17 +82,34 @@ export default function AdminDailyReportsPage() {
   }, [isLoaded, isSignedIn, router])
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const storedReports = window.localStorage.getItem(DAILY_REPORTS_KEY)
-    if (storedReports) {
-      try {
-        const parsed = JSON.parse(storedReports) as DailyReport[]
-        setDailyReports(parsed)
-      } catch {
-        setDailyReports([])
-      }
-    }
+    fetchReports()
   }, [])
+
+  const fetchReports = async () => {
+    setIsLoading(true)
+    try {
+      const res = await fetch("/api/admin/daily-reports")
+      if (res.ok) {
+        const data = await res.json()
+        const mapped = data.map((r: any) => {
+            const content = typeof r.content === 'string' ? JSON.parse(r.content) : r.content
+            return {
+                ...r,
+                topicsTaught: content.topicsTaught,
+                incidentReport: content.incidentReport,
+                homework: content.homework,
+                generalComment: content.generalComment,
+                staffEmail: r.submittedBy // Mapping for now
+            }
+        })
+        setDailyReports(mapped)
+      }
+    } catch (e) {
+      console.error("Failed to fetch reports", e)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const filteredReports = useMemo(() => {
     return dailyReports
@@ -334,7 +352,20 @@ export default function AdminDailyReportsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredReports.map((report) => {
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                          Loading reports...
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredReports.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                          No reports found matching the filters.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredReports.map((report) => {
                         const cls = classesData.find((c) => c.id === report.classId)
                         const isApproved = report.approvalStatus === "Approved"
                         return (
@@ -436,11 +467,11 @@ export default function AdminDailyReportsPage() {
                             </TableCell>
                           </TableRow>
                         )
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </main>
