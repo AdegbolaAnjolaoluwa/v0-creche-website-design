@@ -1,75 +1,61 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { attendance, dailyReports, loanRequests, pupils, classes } from "@/lib/schema";
-import { auth } from "@clerk/nextjs/server";
-import { eq, and, sql } from "drizzle-orm";
+import { pupils, staffAttendance, loanRequests, dailyReports } from "@/lib/schema";
+import { eq, and, count, desc } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   try {
-    const { userId, sessionClaims } = await auth();
-    const role = (sessionClaims?.metadata as any)?.role;
-    const email = (sessionClaims?.primaryEmail as any)?.emailAddress; // Assuming custom claim or standard
-    // Note: Clerk sessionClaims might not have primaryEmail directly exposed without config
-    // For now we will rely on client side email passed or userId if mapped.
-    // Better approach: use userId to find staff record. 
-    // However, schema uses staffEmail. Let's assume we can get email or use userId.
-    
-    // For this MVP, we will require the client to pass the email or classId if needed,
-    // OR we just trust the role check and filter by what we can.
-    // Ideally we should store staffId in tables, not just email.
-    
-    if (!userId || (role !== 'org:staff' && role !== 'org:admin')) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Since we don't have an easy way to get the current user's email securely on the server 
-    // without a DB lookup of the user table (which we sync via webhook ideally),
-    // we will fetch general stats that are filtered by the provided query params 
-    // that the client sends (which we trust because they are authenticated as staff).
-    // A more secure way is to look up the user by userId in our local users table.
-    
-    const { searchParams } = new URL(req.url);
-    const staffEmail = searchParams.get("email");
+    const searchParams = req.nextUrl.searchParams;
+    const email = searchParams.get("email");
     const classId = searchParams.get("classId");
 
-    if (!staffEmail) {
-       return NextResponse.json({ error: "Email required" }, { status: 400 });
+    if (!email) {
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().slice(0, 10);
 
-    // 1. Staff Attendance for today
-    const todaysAttendance = await db.select()
-      .from(attendance)
-      .where(and(eq(attendance.markedBy, userId), eq(attendance.date, today)));
-      
-    // 2. Class Pupil Count (if classId provided)
+    // 1. Pupil Count
+    // If classId is provided, filter by class, otherwise get all?
+    // Staff usually see their own class.
     let pupilCount = 0;
     if (classId) {
-        const pCount = await db.select({ count: sql<number>`count(*)` })
-            .from(pupils)
-            .where(eq(pupils.classId, classId));
-        pupilCount = pCount[0].count;
+        // Since we don't have a direct count query easily without raw sql in some versions,
+        // we can select id and count.
+        const p = await db.select({ id: pupils.id }).from(pupils).where(eq(pupils.classId, classId));
+        pupilCount = p.length;
     }
+
+    // 2. Attendance Marked Today
+    const attendance = await db.select()
+        .from(staffAttendance)
+        .where(and(
+            eq(staffAttendance.staffEmail, email),
+            eq(staffAttendance.date, today)
+        ));
+    const attendanceMarked = attendance.length > 0;
 
     // 3. Pending Loans
-    const pendingLoans = await db.select({ count: sql<number>`count(*)` })
+    const loans = await db.select()
         .from(loanRequests)
-        .where(and(eq(loanRequests.staffEmail, staffEmail), eq(loanRequests.status, "Pending")));
+        .where(and(
+            eq(loanRequests.staffEmail, email),
+            eq(loanRequests.status, "Pending")
+        ));
+    const pendingLoans = loans.length;
 
-    // 4. Recent Daily Reports
-    let recentReportsQuery = db.select().from(dailyReports).where(eq(dailyReports.submittedBy, staffEmail));
-    if (classId) {
-        // @ts-ignore
-        recentReportsQuery = recentReportsQuery.where(and(eq(dailyReports.submittedBy, staffEmail), eq(dailyReports.classId, classId)));
-    }
-    const recentReports = await recentReportsQuery.orderBy(sql`${dailyReports.createdAt} DESC`).limit(5);
+    // 4. Recent Reports (Last 5)
+    const reports = await db.select()
+        .from(dailyReports)
+        .where(eq(dailyReports.submittedBy, email))
+        .orderBy(desc(dailyReports.createdAt))
+        .limit(5);
 
     return NextResponse.json({
-        attendanceMarked: todaysAttendance.length > 0,
-        pupilCount,
-        pendingLoans: pendingLoans[0].count,
-        recentReports
+      pupilCount,
+      attendanceMarked,
+      pendingLoans,
+      recentReports: reports
     });
 
   } catch (error) {

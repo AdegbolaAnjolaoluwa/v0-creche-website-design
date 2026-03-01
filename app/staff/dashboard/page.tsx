@@ -99,14 +99,26 @@ export default function StaffDashboard() {
     return {
       role: (user.publicMetadata.role as string) || "staff",
       email: user.primaryEmailAddress?.emailAddress,
-      classId: (user.publicMetadata.classId as string)
+      classId: (user.publicMetadata.classId as string) || "Nursery 2", // Default for demo
     }
   }, [user])
 
-  const [staffAttendance, setStaffAttendance] = useState<StaffAttendanceRecord[]>([])
-  const [pupilAttendance, setPupilAttendance] = useState<PupilAttendanceRecord[]>([])
-  const [dailyReports, setDailyReports] = useState<DailyReport[]>([])
-  const [loanRequests, setLoanRequests] = useState<LoanRequest[]>([])
+  const [today, setToday] = useState("")
+  const [isSignInClosed, setIsSignInClosed] = useState(false)
+  
+  // Consolidated dashboard state
+  const [dashboardData, setDashboardData] = useState({
+    attendanceMarked: false,
+    pupilCount: 0,
+    pendingLoans: 0,
+    recentReports: [] as any[]
+  })
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    setToday(formatDate(new Date()))
+    setIsSignInClosed(isAfterSignInCutoff())
+  }, [])
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -115,76 +127,13 @@ export default function StaffDashboard() {
   }, [isLoaded, isSignedIn, router])
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const storedStaff = window.localStorage.getItem(STAFF_ATTENDANCE_KEY)
-    const storedPupil = window.localStorage.getItem(PUPIL_ATTENDANCE_KEY)
-    const storedReports = window.localStorage.getItem(DAILY_REPORTS_KEY)
-    const storedLoan = window.localStorage.getItem(LOAN_REQUESTS_KEY)
-    if (storedStaff) {
-      try {
-        const parsed = JSON.parse(storedStaff) as StaffAttendanceRecord[]
-        setStaffAttendance(parsed)
-      } catch {
-        setStaffAttendance([])
-      }
-    }
-    if (storedPupil) {
-      try {
-        const parsed = JSON.parse(storedPupil) as PupilAttendanceRecord[]
-        setPupilAttendance(parsed)
-      } catch {
-        setPupilAttendance([])
-      }
-    }
-    if (storedReports) {
-      try {
-        const parsed = JSON.parse(storedReports) as DailyReport[]
-        setDailyReports(parsed)
-      } catch {
-        setDailyReports([])
-      }
-    }
-    if (storedLoan) {
-      try {
-        const parsed = JSON.parse(storedLoan) as LoanRequest[]
-        setLoanRequests(parsed)
-      } catch {
-        setLoanRequests([])
-      }
-    }
-  }, [])
-
-  const assignedClass = useMemo(
-    () => classesData.find((cls) => cls.id === currentUser?.classId),
-    [currentUser?.classId],
-  )
-
-  const classPupils = useMemo(() => {
-    if (!assignedClass) return []
-    return pupilsData.filter((pupil) => pupil.class === assignedClass.name)
-  }, [assignedClass])
-
-  const [today, setToday] = useState("")
-  const [isSignInClosed, setIsSignInClosed] = useState(false)
-  const [dashboardData, setDashboardData] = useState({
-    attendanceMarked: false,
-    pupilCount: 0,
-    pendingLoans: 0,
-    recentReports: [] as DailyReport[]
-  })
-
-  useEffect(() => {
-    setToday(formatDate(new Date()))
-    setIsSignInClosed(isAfterSignInCutoff())
-  }, [])
-
-  useEffect(() => {
-    if (currentUser?.email) {
+    if (currentUser?.classId) {
       fetchDashboardData()
     }
   }, [currentUser])
 
   const fetchDashboardData = async () => {
+    setIsLoading(true)
     try {
       const query = new URLSearchParams({
         email: currentUser?.email || "",
@@ -197,10 +146,12 @@ export default function StaffDashboard() {
       }
     } catch (e) {
       console.error("Failed to fetch dashboard data", e)
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  // Use API data where applicable, fallback to local logic if needed
+  // Derived values for UI
   const attendanceMarked = dashboardData.attendanceMarked
   const pupilCount = dashboardData.pupilCount
   const pendingLoanCount = dashboardData.pendingLoans
@@ -208,19 +159,18 @@ export default function StaffDashboard() {
       const content = typeof r.content === 'string' ? JSON.parse(r.content) : r.content
       return {
           ...r,
-          topicsTaught: content.topicsTaught,
-          incidentReport: content.incidentReport,
-          homework: content.homework,
-          generalComment: content.generalComment,
-          staffEmail: r.submittedBy // Mapping
+          topicsTaught: content?.topicsTaught,
+          incidentReport: content?.incidentReport,
+          homework: content?.homework,
+          generalComment: content?.generalComment,
+          staffEmail: r.submittedBy
       }
   })
 
-  // Keep these for now if used elsewhere in UI, but primary metrics come from API
-  const todayStaffAttendance = useMemo(() => {
-    if (!currentUser || !today) return []
-    return staffAttendance.filter((record) => record.staffEmail === currentUser.email && record.date === today)
-  }, [currentUser, staffAttendance, today])
+  const assignedClass = useMemo(
+    () => classesData.find((cls) => cls.id === currentUser?.classId),
+    [currentUser?.classId],
+  )
 
   const handleLogout = () => { signOut(() => { router.push("/login") }) }
 
@@ -395,7 +345,7 @@ export default function StaffDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold text-slate-800">{classPupils.length}</div>
+              <div className="text-xl font-bold text-slate-800">{pupilCount}</div>
               <p className="text-xs text-muted-foreground mt-1 font-medium">Active attendance track</p>
             </CardContent>
           </Card>
@@ -409,9 +359,9 @@ export default function StaffDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold text-slate-800">{todayStaffAttendance.length}</div>
+              <div className="text-xl font-bold text-slate-800">{attendanceMarked ? 1 : 0}</div>
               <p className="text-xs text-red-500 mt-1 font-semibold">
-                {todayStaffAttendance.length > 0
+                {attendanceMarked
                   ? "You have signed in for today."
                   : isSignInClosed
                     ? "Late for today"
@@ -446,7 +396,7 @@ export default function StaffDashboard() {
               <User className="h-6 w-6 text-blue-500" />
             </div>
             <div className="absolute top-10 right-10 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
-              {todayStaffAttendance.length}
+              {attendanceMarked ? 1 : 0}
             </div>
             <CardHeader className="px-0 pt-8">
               <CardTitle className="text-2xl font-bold text-slate-800">My Attendance</CardTitle>
@@ -460,7 +410,7 @@ export default function StaffDashboard() {
               <div className="flex items-center justify-between mb-6">
                 <span className="text-sm font-semibold text-slate-700">Sign-ins recorded today</span>
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
-                  {todayStaffAttendance.length}
+                  {attendanceMarked ? 1 : 0}
                 </span>
               </div>
               <Button asChild className="w-full bg-amber-400 hover:bg-amber-500 text-amber-900 font-bold h-12 rounded-xl border-none">
@@ -476,7 +426,7 @@ export default function StaffDashboard() {
               <Users className="h-6 w-6 text-green-500" />
             </div>
             <div className="absolute top-10 right-10 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
-              {classPupils.length}
+              {pupilCount}
             </div>
             <CardHeader className="px-0 pt-8">
               <CardTitle className="text-2xl font-bold text-slate-800">Class Attendance</CardTitle>
@@ -490,7 +440,7 @@ export default function StaffDashboard() {
               <div className="flex items-center justify-between mb-6">
                 <span className="text-sm font-semibold text-slate-700">Pupils in your class</span>
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
-                  {classPupils.length}
+                  {pupilCount}
                 </span>
               </div>
               <Button asChild className="w-full bg-green-500 hover:bg-green-600 text-white font-bold h-12 rounded-xl border-none">
@@ -567,7 +517,7 @@ export default function StaffDashboard() {
               <Users className="h-6 w-6 text-orange-600" />
             </div>
             <div className="absolute top-10 right-10 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
-              {classPupils.length}
+              {pupilCount}
             </div>
             <CardHeader className="px-0 pt-8">
               <CardTitle className="text-2xl font-bold text-slate-800">Pupils</CardTitle>
@@ -581,7 +531,7 @@ export default function StaffDashboard() {
               <div className="flex items-center justify-between mb-6">
                 <span className="text-sm font-semibold text-slate-700">Total pupils enrolled</span>
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
-                  {classPupils.length}
+                  {pupilCount}
                 </span>
               </div>
               <Button asChild className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold h-12 rounded-xl border-none">

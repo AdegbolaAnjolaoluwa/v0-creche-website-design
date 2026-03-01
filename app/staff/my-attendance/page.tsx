@@ -71,6 +71,7 @@ export default function MyAttendancePage() {
 
   const [staffAttendance, setStaffAttendance] = useState<StaffAttendanceRecord[]>([])
   const [isSigningIn, setIsSigningIn] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -79,17 +80,25 @@ export default function MyAttendancePage() {
   }, [isLoaded, isSignedIn, router])
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const storedStaff = window.localStorage.getItem(STAFF_ATTENDANCE_KEY)
-    if (storedStaff) {
-      try {
-        const parsed = JSON.parse(storedStaff) as StaffAttendanceRecord[]
-        setStaffAttendance(parsed)
-      } catch {
-        setStaffAttendance([])
-      }
+    if (currentUser?.email) {
+      fetchAttendance()
     }
-  }, [])
+  }, [currentUser])
+
+  const fetchAttendance = async () => {
+    setIsLoading(true)
+    try {
+      const res = await fetch(`/api/staff/attendance?email=${currentUser?.email}`)
+      if (res.ok) {
+        const data = await res.json()
+        setStaffAttendance(data)
+      }
+    } catch (e) {
+      console.error("Failed to fetch attendance", e)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const assignedClass = useMemo(
     () => classesData.find((cls) => cls.id === currentUser?.classId),
@@ -115,30 +124,48 @@ export default function MyAttendancePage() {
     return records.slice(0, 20)
   }, [currentUser, staffAttendance])
 
-  const handleStaffSignIn = () => {
-    if (!currentUser) return
-    if (typeof window === "undefined") return
-    if (isAfterSignInCutoff()) return
+  const handleStaffSignIn = async () => {
+    if (!currentUser?.email) return
+    if (isAfterSignInCutoff()) {
+        alert("Sign-in time has passed (7:45 AM).")
+        return
+    }
+    
+    // Optimistic check
     const alreadySignedIn = staffAttendance.some(
       (record) => record.staffEmail === currentUser.email && record.date === today,
     )
     if (alreadySignedIn) return
+
     setIsSigningIn(true)
-    const now = new Date()
-    const date = formatDate(now)
-    const time = formatTime(now)
-    const createdAt = now.toISOString()
-    const record: StaffAttendanceRecord = {
-      id: `${currentUser.email}-${createdAt}`,
-      staffEmail: currentUser.email || "",
-      date,
-      time,
-      createdAt,
+    try {
+        const now = new Date()
+        const date = formatDate(now)
+        const time = formatTime(now)
+        
+        const res = await fetch("/api/staff/attendance", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                email: currentUser.email,
+                date,
+                time
+            })
+        })
+
+        if (res.ok) {
+            alert("Signed in successfully!")
+            fetchAttendance() // Refresh
+        } else {
+            const data = await res.json()
+            alert(data.error || "Failed to sign in")
+        }
+    } catch (e) {
+        console.error("Failed to sign in", e)
+        alert("Failed to sign in")
+    } finally {
+        setIsSigningIn(false)
     }
-    const updated = [...staffAttendance, record]
-    setStaffAttendance(updated)
-    window.localStorage.setItem(STAFF_ATTENDANCE_KEY, JSON.stringify(updated))
-    setIsSigningIn(false)
   }
 
   const handleLogout = () => { signOut(() => { router.push("/login?type=staff") }) }

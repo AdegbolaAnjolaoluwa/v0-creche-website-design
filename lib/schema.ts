@@ -49,6 +49,7 @@ export const loanRequests = sqliteTable('loan_requests', {
   staffName: text('staff_name').notNull(),
   amount: integer('amount').notNull(),
   reason: text('reason').notNull(),
+  repaymentPlan: text('repayment_plan'),
   status: text('status').notNull().default('Pending'), // Pending, Approved, Rejected
   approvedBy: text('approved_by'), // Admin ID
   createdAt: integer('created_at').notNull(),
@@ -60,6 +61,14 @@ export const staffAssignments = sqliteTable('staff_assignments', {
   id: text('id').primaryKey(),
   classId: text('class_id').notNull(),
   staffEmail: text('staff_email').notNull(), // Using email to link for now as IDs might change
+  createdAt: integer('created_at').notNull(),
+});
+
+export const staffAttendance = sqliteTable('staff_attendance', {
+  id: text('id').primaryKey(),
+  staffEmail: text('staff_email').notNull(),
+  date: text('date').notNull(), // YYYY-MM-DD
+  time: text('time').notNull(), // HH:MM:SS
   createdAt: integer('created_at').notNull(),
 });
 

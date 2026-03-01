@@ -65,9 +65,10 @@ export default function StaffLoanPage() {
     }
   }, [user])
 
-  const [loanRequests, setLoanRequests] = useState<LoanRequest[]>([])
+  const [loanRequests, setLoanRequests] = useState<any[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   
   // Form State
   const [amount, setAmount] = useState<string>("")
@@ -81,52 +82,62 @@ export default function StaffLoanPage() {
   }, [isLoaded, isSignedIn, router])
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const stored = window.localStorage.getItem(LOAN_REQUESTS_KEY)
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as LoanRequest[]
-        setLoanRequests(parsed)
-      } catch {
-        setLoanRequests([])
-      }
+    if (currentUser?.email) {
+      fetchLoans()
     }
-  }, [])
+  }, [currentUser])
 
-  const myRequests = loanRequests
-    .filter((req) => req.staffEmail === currentUser?.email)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  const fetchLoans = async () => {
+    setIsLoading(true)
+    try {
+      const res = await fetch(`/api/staff/loan?email=${currentUser?.email}`)
+      if (res.ok) {
+        const data = await res.json()
+        setLoanRequests(data)
+      }
+    } catch (e) {
+      console.error("Failed to fetch loans", e)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!currentUser?.email) return
-    
+    if (!currentUser) return
     setIsSubmitting(true)
     
-    setTimeout(() => {
-      const newRequest: LoanRequest = {
-        id: `LN-${Date.now()}`,
-        staffEmail: currentUser.email!,
-        amount: parseFloat(amount),
-        reason,
-        repaymentPlan,
-        status: "Pending",
-        createdAt: new Date().toISOString()
-      }
-      
-      const updated = [newRequest, ...loanRequests]
-      setLoanRequests(updated)
-      window.localStorage.setItem(LOAN_REQUESTS_KEY, JSON.stringify(updated))
-      
-      setIsSubmitting(false)
-      setIsDialogOpen(false)
-      
-      // Reset form
-      setAmount("")
-      setReason("")
-      setRepaymentPlan("")
-    }, 1000)
+    try {
+        const res = await fetch("/api/staff/loan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                email: currentUser.email,
+                amount: parseFloat(amount),
+                reason,
+                repaymentPlan
+            })
+        })
+
+        if (res.ok) {
+            alert("Loan request submitted successfully!")
+            setIsDialogOpen(false)
+            setAmount("")
+            setReason("")
+            setRepaymentPlan("")
+            fetchLoans() // Refresh
+        } else {
+            alert("Failed to submit loan request")
+        }
+    } catch (e) {
+        console.error("Failed to submit loan", e)
+        alert("Failed to submit loan request")
+    } finally {
+        setIsSubmitting(false)
+    }
   }
+
+  const myRequests = loanRequests
 
   const handleLogout = () => { signOut(() => { router.push("/login") }) }
 
