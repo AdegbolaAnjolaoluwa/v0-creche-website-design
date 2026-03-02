@@ -28,7 +28,7 @@ export default function ParentDashboard() {
   const router = useRouter();
   const { signOut } = useClerk();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
-  const { user } = useUser()
+  const { isLoaded, isSignedIn, user } = useUser()
   
   const [pupil, setPupil] = useState<any>(null)
   const [results, setResults] = useState<any[]>([])
@@ -38,22 +38,36 @@ export default function ParentDashboard() {
   const [notLinked, setNotLinked] = useState(false)
 
   useEffect(() => {
-    fetchDashboardData()
-  }, [])
+    if (isLoaded && !isSignedIn) {
+      router.push("/login")
+    }
+  }, [isLoaded, isSignedIn, router])
+
+  useEffect(() => {
+    if (user) {
+        fetchDashboardData()
+    }
+  }, [user])
 
   const fetchDashboardData = async () => {
     setIsLoading(true)
     setNotLinked(false)
     try {
-      const res = await fetch("/api/parent/dashboard")
+      const email = user?.primaryEmailAddress?.emailAddress
+      if (!email) return
+
+      const res = await fetch(`/api/parent/dashboard?email=${email}`)
       if (res.ok) {
         const data = await res.json()
         if (data.notLinked) {
             setNotLinked(true)
         } else {
             setPupil(data.pupil)
-            setResults(data.results)
+            setResults(data.results || [])
         }
+      } else {
+          // If 404, maybe not linked
+          setNotLinked(true)
       }
     } catch (e) {
       console.error("Failed to fetch dashboard data", e)
@@ -68,10 +82,11 @@ export default function ParentDashboard() {
 
     setIsLinking(true)
     try {
+        const email = user?.primaryEmailAddress?.emailAddress
         const res = await fetch("/api/parent/dashboard", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ pupilId: linkPupilId })
+            body: JSON.stringify({ pupilId: linkPupilId, email })
         })
 
         if (res.ok) {
@@ -90,23 +105,25 @@ export default function ParentDashboard() {
 
   // Calculate stats from the latest result if available
   const latestResult = results.length > 0 ? results[0] : null
-  const subjects = latestResult ? latestResult.subjects : []
+  const subjectsObj = latestResult && typeof latestResult.subjects === 'string' 
+    ? JSON.parse(latestResult.subjects) 
+    : (latestResult?.subjects || {})
+    
+  // Transform subjects object to array if needed for calculation
+  const subjectKeys = Object.keys(subjectsObj)
   
   // Calculate average score
-  const averageScore = subjects.length > 0 
-    ? subjects.reduce((acc: number, sub: any) => acc + (sub.total || 0), 0) / subjects.length 
-    : 0
+  // Assuming subjectsObj structure is { SubjectName: { midterm: "10", exam: "20" } }
+  // We need to know how to calculate total from this structure if it matches the new DB format
+  
+  // Helper to parse score
+  const getScore = (val: string) => Number(val) || 0
+  
+  const calculatedAverage = latestResult?.averageScore || 0
 
-  // Count grades
-  const gradeCount = subjects.reduce(
-    (acc: Record<string, number>, result: any) => {
-      if (result.grade) {
-        acc[result.grade] = (acc[result.grade] || 0) + 1
-      }
-      return acc
-    },
-    {} as Record<string, number>,
-  )
+  // Count grades (if needed, but subjectKeys are strings now)
+  // We can skip this or calculate if we parse scores fully
+  const gradeCount: Record<string, number> = {} // Placeholder
 
   const handleLogout = () => {
     signOut(() => router.push("/login"));

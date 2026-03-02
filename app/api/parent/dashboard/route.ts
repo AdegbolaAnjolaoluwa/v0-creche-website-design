@@ -1,101 +1,88 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { pupils, results, parentStudentLinks } from "@/lib/schema";
-import { auth } from "@clerk/nextjs/server";
-import { eq } from "drizzle-orm";
+import { users, pupils, results, parentPupil } from "@/lib/schema";
+import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
-// GET: Fetch dashboard data (pupil, results) for linked child
 export async function GET(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const searchParams = req.nextUrl.searchParams;
+    const email = searchParams.get("email");
+
+    if (!email) {
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    // 1. Check for linked pupil
-    const link = await db.select().from(parentStudentLinks).where(eq(parentStudentLinks.userId, userId));
+    // 1. Find Parent User
+    // For now we assume email is the link. In a real app we might use userId
+    // But our parentPupil table links parentEmail to pupilId
     
-    if (link.length === 0) {
-      return NextResponse.json({ notLinked: true });
+    // Check if linked
+    const links = await db.select().from(parentPupil).where(eq(parentPupil.parentEmail, email));
+    
+    if (links.length === 0) {
+        return NextResponse.json({ notLinked: true });
     }
 
-    const studentId = link[0].studentId;
+    const pupilId = links[0].pupilId;
+
+    // 2. Fetch Pupil Details
+    const pupilData = await db.select().from(pupils).where(eq(pupils.id, pupilId));
     
-    // 2. Fetch Pupil Data
-    const pupilList = await db.select().from(pupils).where(eq(pupils.id, studentId));
-    if (pupilList.length === 0) {
-       // Should ideally delete broken link, but for now just return error
-       return NextResponse.json({ error: "Linked pupil not found" }, { status: 404 });
+    if (pupilData.length === 0) {
+         return NextResponse.json({ error: "Pupil not found" }, { status: 404 });
     }
-    const pupil = pupilList[0];
 
     // 3. Fetch Results
-    const pupilResults = await db.select()
-        .from(results)
-        .where(eq(results.studentId, studentId))
-        .orderBy(results.createdAt); // Order by date created
+    const pupilResults = await db.select().from(results).where(eq(results.studentId, pupilId));
 
     return NextResponse.json({
-        pupil: {
-            ...pupil,
-            guardians: JSON.parse(pupil.guardians)
-        },
-        results: pupilResults.map(r => ({
-            ...r,
-            subjects: JSON.parse(r.subjects)
-        }))
+        pupil: pupilData[0],
+        results: pupilResults
     });
 
   } catch (error) {
-    console.error("Error fetching parent dashboard data:", error);
+    console.error("Error fetching parent dashboard:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-// POST: Link a pupil to the parent account using Pupil ID
 export async function POST(req: NextRequest) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
         const body = await req.json();
-        const { pupilId } = body;
+        const { email, pupilId } = body;
 
-        if (!pupilId) {
-            return NextResponse.json({ error: "Pupil ID is required" }, { status: 400 });
+        if (!email || !pupilId) {
+            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
-        // 1. Verify Pupil Exists
-        const existingPupil = await db.select().from(pupils).where(eq(pupils.id, pupilId));
-        if (existingPupil.length === 0) {
-            return NextResponse.json({ error: "Pupil ID not found. Please check and try again." }, { status: 404 });
+        // Verify pupil exists
+        const pupilCheck = await db.select().from(pupils).where(eq(pupils.id, pupilId));
+        if (pupilCheck.length === 0) {
+            return NextResponse.json({ error: "Invalid Pupil ID" }, { status: 404 });
         }
 
-        // 2. Create Link
-        // Check if link already exists
-        const existingLink = await db.select().from(parentStudentLinks).where(eq(parentStudentLinks.userId, userId));
-        if (existingLink.length > 0) {
-            // Update existing link or reject? Let's update for now to allow switching/correction
-            await db.update(parentStudentLinks)
-                .set({ studentId: pupilId })
-                .where(eq(parentStudentLinks.userId, userId));
-        } else {
-            await db.insert(parentStudentLinks).values({
-                id: nanoid(),
-                userId,
-                studentId: pupilId,
-                createdAt: Date.now()
-            });
+        // Create Link
+        // Check if already exists
+        const existing = await db.select()
+            .from(parentPupil)
+            .where(and(eq(parentPupil.parentEmail, email), eq(parentPupil.pupilId, pupilId)));
+            
+        if (existing.length > 0) {
+             return NextResponse.json({ message: "Already linked" });
         }
 
-        return NextResponse.json({ success: true, message: "Successfully linked to pupil" });
+        await db.insert(parentPupil).values({
+            id: nanoid(),
+            parentEmail: email,
+            pupilId: pupilId,
+            createdAt: Date.now()
+        });
+
+        return NextResponse.json({ success: true });
 
     } catch (error) {
-        console.error("Error linking pupil:", error);
+        console.error("Error linking parent to pupil:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
