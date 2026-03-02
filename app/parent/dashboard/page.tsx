@@ -330,16 +330,16 @@ export default function ParentDashboard() {
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-xl font-bold">{averageScore.toFixed(1)}%</div>
+                <div className="text-xl font-bold">{calculatedAverage.toFixed(1)}%</div>
                 <p className="text-xs text-muted-foreground">
                   Grade:{" "}
-                  {averageScore >= 70
+                  {calculatedAverage >= 70
                     ? "A"
-                    : averageScore >= 60
+                    : calculatedAverage >= 60
                       ? "B"
-                      : averageScore >= 50
+                      : calculatedAverage >= 50
                         ? "C"
-                        : averageScore >= 40
+                        : calculatedAverage >= 40
                           ? "D"
                           : "F"}
                 </p>
@@ -351,7 +351,7 @@ export default function ParentDashboard() {
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-xl font-bold">{subjects.length}</div>
+                <div className="text-xl font-bold">{subjectKeys.length}</div>
                 <p className="text-xs text-muted-foreground">
                   {gradeCount.A || 0} A's, {gradeCount.B || 0} B's, {gradeCount.C || 0} C's
                 </p>
@@ -388,31 +388,43 @@ export default function ParentDashboard() {
                       <div className="col-span-2 text-center">Grade</div>
                     </div>
                     <div className="divide-y">
-                      {subjects.map((result: any) => (
-                        <div key={result.subject} className="grid grid-cols-12 gap-2 p-4 items-center">
-                          <div className="col-span-4">{result.subject}</div>
-                          <div className="col-span-2 text-center">{result.midterm}</div>
-                          <div className="col-span-2 text-center">{result.exam}</div>
-                          <div className="col-span-2 text-center">{(result.total || 0).toFixed(1)}</div>
+                      {subjectKeys.map((subject) => {
+                        const scoreData = subjectsObj[subject] || { midterm: "0", exam: "0" }
+                        const midterm = Number(scoreData.midterm) || 0
+                        const exam = Number(scoreData.exam) || 0
+                        const total = midterm * 0.4 + exam * 0.6 // Assuming this formula
+                        
+                        let grade = "F"
+                        if (total >= 70) grade = "A"
+                        else if (total >= 60) grade = "B"
+                        else if (total >= 50) grade = "C"
+                        else if (total >= 40) grade = "D"
+
+                        return (
+                        <div key={subject} className="grid grid-cols-12 gap-2 p-4 items-center">
+                          <div className="col-span-4">{subject}</div>
+                          <div className="col-span-2 text-center">{scoreData.midterm}</div>
+                          <div className="col-span-2 text-center">{scoreData.exam}</div>
+                          <div className="col-span-2 text-center">{total.toFixed(1)}</div>
                           <div className="col-span-2 text-center">
                             <span
                               className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                result.grade === "A"
+                                grade === "A"
                                   ? "bg-green-100 text-green-800"
-                                  : result.grade === "B"
+                                  : grade === "B"
                                     ? "bg-blue-100 text-blue-800"
-                                    : result.grade === "C"
+                                    : grade === "C"
                                       ? "bg-yellow-100 text-yellow-800"
-                                      : result.grade === "D"
+                                      : grade === "D"
                                         ? "bg-orange-100 text-orange-800"
                                         : "bg-red-100 text-red-800"
                               }`}
                             >
-                              {result.grade}
+                              {grade}
                             </span>
                           </div>
                         </div>
-                      ))}
+                      )})}
                     </div>
                   </div>
 
