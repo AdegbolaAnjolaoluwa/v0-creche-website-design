@@ -61,9 +61,12 @@ export default function ClassesPage() {
   }
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would typically add the new class to your database
+    
+    // Ideally use API
+    // await fetch('/api/admin/classes', { method: 'POST', body: JSON.stringify(newClass) })
+    
     console.log("New class:", newClass)
     setIsAddClassOpen(false)
     // Reset form
