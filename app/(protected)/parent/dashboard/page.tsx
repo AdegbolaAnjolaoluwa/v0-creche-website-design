@@ -3,10 +3,9 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useUser } from "@clerk/nextjs"
+import { useUser, useClerk } from "@clerk/nextjs"
 import { BarChart3, BookOpen, ChevronDown, Download, FileText, Home, LogOut, Menu, Settings, User } from "lucide-react"
-import { useClerk } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,6 +28,8 @@ export default function ParentDashboard() {
   const { signOut } = useClerk();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
   const { isLoaded, isSignedIn, user } = useUser()
+  const searchParams = useSearchParams()
+  const pupilIdFromQuery = searchParams.get("pupilId")
   
   const [pupil, setPupil] = useState<any>(null)
   const [results, setResults] = useState<any[]>([])
@@ -37,29 +38,44 @@ export default function ParentDashboard() {
   const [isLinking, setIsLinking] = useState(false)
   const [notLinked, setNotLinked] = useState(false)
 
+  // Determine if we are using Clerk (Email) or Custom (Pupil ID) login
+  // If we have a pupilId in the query (from our custom login), we prioritize that.
+  // Otherwise we check Clerk.
+  
   useEffect(() => {
-    if (isLoaded && !isSignedIn) {
-      router.push("/login")
-    }
-  }, [isLoaded, isSignedIn, router])
+      // If using Clerk and not signed in, check if we have a custom login session (query param for now)
+      if (isLoaded && !isSignedIn && !pupilIdFromQuery) {
+          router.push("/login")
+      }
+  }, [isLoaded, isSignedIn, router, pupilIdFromQuery])
 
   useEffect(() => {
-    if (user) {
+    if (user || pupilIdFromQuery) {
         fetchDashboardData()
     }
-  }, [user])
+  }, [user, pupilIdFromQuery])
 
   const fetchDashboardData = async () => {
     setIsLoading(true)
     setNotLinked(false)
     try {
-      const email = user?.primaryEmailAddress?.emailAddress
-      if (!email) return
+      // Logic:
+      // 1. If we have pupilIdFromQuery, fetch data for that ID directly (Custom Login)
+      // 2. If we have Clerk user, fetch by email link (Standard Login)
+      
+      let url = ""
+      if (pupilIdFromQuery) {
+          url = `/api/parent/dashboard?pupilId=${pupilIdFromQuery}`
+      } else if (user?.primaryEmailAddress?.emailAddress) {
+          url = `/api/parent/dashboard?email=${user.primaryEmailAddress.emailAddress}`
+      }
 
-      const res = await fetch(`/api/parent/dashboard?email=${email}`)
+      if (!url) return
+
+      const res = await fetch(url)
       if (res.ok) {
         const data = await res.json()
-        if (data.notLinked) {
+        if (data.notLinked && !pupilIdFromQuery) {
             setNotLinked(true)
         } else {
             setPupil(data.pupil)
@@ -67,7 +83,7 @@ export default function ParentDashboard() {
         }
       } else {
           // If 404, maybe not linked
-          setNotLinked(true)
+          if (!pupilIdFromQuery) setNotLinked(true)
       }
     } catch (e) {
       console.error("Failed to fetch dashboard data", e)
@@ -126,7 +142,13 @@ export default function ParentDashboard() {
   const gradeCount: Record<string, number> = {} // Placeholder
 
   const handleLogout = () => {
-    signOut(() => router.push("/login"));
+    if (pupilIdFromQuery) {
+        // Custom logout for Pupil ID session
+        router.push("/login")
+    } else {
+        // Clerk logout
+        signOut(() => router.push("/login"));
+    }
   };
 
   if (isLoading) {

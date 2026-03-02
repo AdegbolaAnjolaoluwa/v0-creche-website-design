@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
 
 // Users Table (Synced with Clerk via Webhooks mostly, but good for local joins)
 export const users = sqliteTable('users', {
@@ -28,6 +28,11 @@ export const results = sqliteTable('results', {
   status: text('status').notNull().default('Draft'), // Draft, Published
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
+}, (table) => {
+  return {
+    studentIdIdx: index('results_student_id_idx').on(table.studentId),
+    classIdIdx: index('results_class_id_idx').on(table.classId),
+  }
 });
 
 // Classes Table
@@ -82,6 +87,12 @@ export const attendance = sqliteTable('attendance', {
   status: text('status').notNull(), // Present, Absent, Late
   markedBy: text('marked_by').notNull(), // Staff ID/Email
   timestamp: integer('timestamp').notNull(),
+}, (table) => {
+  return {
+    studentIdIdx: index('attendance_student_id_idx').on(table.studentId),
+    classIdIdx: index('attendance_class_id_idx').on(table.classId),
+    dateIdx: index('attendance_date_idx').on(table.date),
+  }
 });
 
 // Daily Reports Table
@@ -93,6 +104,12 @@ export const dailyReports = sqliteTable('daily_reports', {
   content: text('content').notNull(), // JSON string of the report data
   submittedBy: text('submitted_by').notNull(),
   createdAt: integer('created_at').notNull(),
+}, (table) => {
+  return {
+    studentIdIdx: index('daily_reports_student_id_idx').on(table.studentId),
+    classIdIdx: index('daily_reports_class_id_idx').on(table.classId),
+    dateIdx: index('daily_reports_date_idx').on(table.date),
+  }
 });
 
 export const parentStudentLinks = sqliteTable('parent_student_links', {

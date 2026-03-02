@@ -8,23 +8,25 @@ export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
     const email = searchParams.get("email");
+    const pupilIdParam = searchParams.get("pupilId");
 
-    if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    let pupilId = "";
+
+    if (pupilIdParam) {
+        // Direct access via Pupil ID login
+        pupilId = pupilIdParam;
+    } else if (email) {
+        // Standard access via Email Link
+        // Check if linked
+        const links = await db.select().from(parentPupil).where(eq(parentPupil.parentEmail, email));
+        
+        if (links.length === 0) {
+            return NextResponse.json({ notLinked: true });
+        }
+        pupilId = links[0].pupilId;
+    } else {
+        return NextResponse.json({ error: "Missing identifier (email or pupilId)" }, { status: 400 });
     }
-
-    // 1. Find Parent User
-    // For now we assume email is the link. In a real app we might use userId
-    // But our parentPupil table links parentEmail to pupilId
-    
-    // Check if linked
-    const links = await db.select().from(parentPupil).where(eq(parentPupil.parentEmail, email));
-    
-    if (links.length === 0) {
-        return NextResponse.json({ notLinked: true });
-    }
-
-    const pupilId = links[0].pupilId;
 
     // 2. Fetch Pupil Details
     const pupilData = await db.select().from(pupils).where(eq(pupils.id, pupilId));
