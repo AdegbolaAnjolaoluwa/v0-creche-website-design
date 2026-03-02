@@ -171,22 +171,7 @@ export default function AdminDashboard() {
   const totalDraftResults = dashboardMetrics.totalDraftResults;
   const averageScore = dashboardMetrics.averageScore;
 
-  // Keep existing detailed logic for charts (can be migrated later if needed)
-  const results = useMemo<ResultRecord[]>(() => [], [])
-  const pupilAttendance = useMemo<PupilAttendanceRecord[]>(() => [], [])
-  const dailyReports = useMemo<DailyReport[]>(() => [], [])
-  const loanRequests = useMemo<LoanRequest[]>(() => [], [])
-
-  const publishedResults = useMemo<ResultRecord[]>(
-    () => [],
-    [],
-  )
-
-  // const recentResults = useMemo<ResultRecord[]>(
-  //   () => [],
-  //   []
-  // )
-
+  // Use recentActivity directly
   const recentResults = recentActivity;
 
   const gradeAnalytics = useMemo(() => {
@@ -331,10 +316,10 @@ export default function AdminDashboard() {
 
   // Removed duplicate recentResults declaration here as it is now handled by API data above
 
-  const sortedReports = useMemo(
-    () => [...results].sort((a, b) => (a.date < b.date ? 1 : -1)),
-    [results],
-  )
+  // const sortedReports = useMemo(
+  //   () => [...results].sort((a, b) => (a.date < b.date ? 1 : -1)),
+  //   [results],
+  // )
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -891,7 +876,7 @@ export default function AdminDashboard() {
                   <CardDescription>Generate and view reports for different classes and terms.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {sortedReports.length === 0 ? (
+                  {recentResults.length === 0 ? (
                     <div className="flex h-[300px] items-center justify-center rounded-md border border-dashed">
                       <div className="flex flex-col items-center gap-1 text-center">
                         <FileText className="h-8 w-8 text-muted-foreground" />
@@ -904,7 +889,7 @@ export default function AdminDashboard() {
                   ) : (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <span>{sortedReports.length} reports generated</span>
+                        <span>{recentResults.length} reports generated</span>
                         <Link href="/admin/results" className="underline">
                           View in Results
                         </Link>
@@ -923,7 +908,7 @@ export default function AdminDashboard() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {sortedReports.map((result) => (
+                            {recentResults.map((result) => (
                               <TableRow key={result.id}>
                                 <TableCell className="font-medium">{result.id}</TableCell>
                                 <TableCell>

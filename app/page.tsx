@@ -91,46 +91,40 @@ export default function Home() {
               <div className="space-y-2">
                 <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary">Our Approach</div>
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  Why Choose Bayhood Preperatory School ?
+                  Why Choose Bayhood Preparatory School ?
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  We combine play based learning with structured activities to create a balanced educational experience.
+                  We combine play-based learning with structured activities to create a balanced educational experience.
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-5xl items-center gap-6 py-12 lg:grid-cols-3 lg:gap-12">
-              <div className="flex flex-col justify-center space-y-4 rounded-lg border bg-card p-6 shadow-sm">
+            <div className="mx-auto grid max-w-5xl items-center gap-6 py-12 lg:grid-cols-3">
+              <div className="flex flex-col items-center space-y-2 rounded-lg border bg-background p-6 shadow-sm">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                  <GraduationCap className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold">Expert Teachers</h3>
+                <p className="text-center text-muted-foreground">
+                  Qualified and experienced educators dedicated to child development.
+                </p>
+              </div>
+              <div className="flex flex-col items-center space-y-2 rounded-lg border bg-background p-6 shadow-sm">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                   <Heart className="h-6 w-6 text-primary" />
                 </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-bold">Nurturing Environment</h3>
-                  <p className="text-muted-foreground">
-                    We create a loving, supportive space where children feel safe to explore and learn.
-                  </p>
-                </div>
+                <h3 className="text-xl font-bold">Nurturing Environment</h3>
+                <p className="text-center text-muted-foreground">
+                  A safe, loving space where every child feels valued and supported.
+                </p>
               </div>
-              <div className="flex flex-col justify-center space-y-4 rounded-lg border bg-card p-6 shadow-sm">
+              <div className="flex flex-col items-center space-y-2 rounded-lg border bg-background p-6 shadow-sm">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                   <BookOpen className="h-6 w-6 text-primary" />
                 </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-bold">Innovative Curriculum</h3>
-                  <p className="text-muted-foreground">
-                    Our program balances academic foundations with creative play and social development.
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-col justify-center space-y-4 rounded-lg border bg-card p-6 shadow-sm">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                  <Users className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-bold">Qualified Teachers</h3>
-                  <p className="text-muted-foreground">
-                    Our experienced educators are passionate about early childhood development.
-                  </p>
-                </div>
+                <h3 className="text-xl font-bold">Holistic Curriculum</h3>
+                <p className="text-center text-muted-foreground">
+                  Focusing on academic, social, emotional, and physical growth.
+                </p>
               </div>
             </div>
           </div>

@@ -75,7 +75,6 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    // Validate body...
     
     const newResult = {
       id: nanoid(),
@@ -84,7 +83,7 @@ export async function POST(req: NextRequest) {
       classId: body.classId,
       term: body.term,
       academicYear: body.academicYear,
-      subjects: JSON.stringify(body.subjects),
+      subjects: typeof body.subjects === 'string' ? body.subjects : JSON.stringify(body.subjects),
       totalScore: body.totalScore,
       averageScore: body.averageScore,
       grade: body.grade,

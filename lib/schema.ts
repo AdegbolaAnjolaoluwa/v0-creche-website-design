@@ -102,6 +102,14 @@ export const parentStudentLinks = sqliteTable('parent_student_links', {
   createdAt: integer('created_at').notNull(),
 });
 
+// Parent Pupil Links Table (New)
+export const parentPupil = sqliteTable('parent_pupil', {
+  id: text('id').primaryKey(),
+  parentEmail: text('parent_email').notNull(),
+  pupilId: text('pupil_id').notNull(),
+  createdAt: integer('created_at').notNull(),
+});
+
 // Pupils Table
 export const pupils = sqliteTable('pupils', {
   id: text('id').primaryKey(),
