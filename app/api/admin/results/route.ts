@@ -1,67 +1,62 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { results } from "@/lib/schema";
+import { results, auditLogs } from "@/lib/schema";
 import { auth } from "@clerk/nextjs/server";
 import { eq, and, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { resultsData } from "@/lib/data";
+import { z } from "zod";
+
+const resultSchema = z.object({
+  studentId: z.string(),
+  studentName: z.string(),
+  classId: z.string(),
+  term: z.string(),
+  academicYear: z.string(),
+  subjects: z.union([z.string(), z.record(z.any())]),
+  totalScore: z.number(),
+  averageScore: z.number(),
+  grade: z.string(),
+  teacherComment: z.string().optional(),
+  headTeacherComment: z.string().optional(),
+  status: z.enum(['Draft', 'Published']),
+});
 
 export async function GET(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { userId, sessionClaims } = await auth();
+    const role = (sessionClaims?.metadata as any)?.role;
+
+    if (!userId || (role !== 'org:admin' && role !== 'org:staff')) {
+       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);
     const classId = searchParams.get("classId");
     const term = searchParams.get("term");
-
-    // Check if results table is empty
-    const countResult = await db.select({ count: sql<number>`count(*)` }).from(results);
-    const count = countResult[0].count;
-
-    if (count === 0) {
-      console.log("Seeding results database...");
-      const resultsToInsert = resultsData.map(r => ({
-        id: r.id,
-        studentId: r.pupilId || nanoid(),
-        studentName: r.pupilName,
-        classId: r.class, // Map class name to classId for now
-        term: r.term,
-        academicYear: "2023/2024",
-        subjects: JSON.stringify(r.scores || {}),
-        totalScore: r.finalScore || 0,
-        averageScore: r.averageScore,
-        grade: r.grade,
-        teacherComment: r.teacherComment,
-        headTeacherComment: r.proprietressComment,
-        status: r.status,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      }));
-      
-      if (resultsToInsert.length > 0) {
-        await db.insert(results).values(resultsToInsert);
-      }
-    }
+    const requestedLimit = parseInt(searchParams.get("limit") || "50");
+    // Hard cap limit at 100 to prevent DoS
+    const limit = Math.max(1, Math.min(requestedLimit, 100)); 
+    
+    const requestedOffset = parseInt(searchParams.get("offset") || "0");
+    // Hard cap offset to prevent deep pagination abuse (performance degradation)
+    const offset = Math.max(0, Math.min(requestedOffset, 10000));
 
     let query = db.select().from(results);
-    
-    // Build dynamic query
-    if (classId && term) {
+    const conditions = [];
+
+    if (classId) conditions.push(eq(results.classId, classId));
+    if (term) conditions.push(eq(results.term, term));
+
+    if (conditions.length > 0) {
         // @ts-ignore
-        query = query.where(and(eq(results.classId, classId), eq(results.term, term)));
-    } else if (classId) {
-        // @ts-ignore
-        query = query.where(eq(results.classId, classId));
+        query.where(and(...conditions));
     }
 
-    const allResults = await query;
+    const allResults = await query.limit(limit).offset(offset);
     return NextResponse.json(allResults);
   } catch (error) {
-    console.error("Error fetching results:", error);
-    return NextResponse.json({ error: "Failed to fetch results" }, { status: 500 });
+    if (process.env.NODE_ENV !== 'production') console.error("Error fetching results:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
@@ -71,34 +66,55 @@ export async function POST(req: NextRequest) {
     const role = (sessionClaims?.metadata as any)?.role;
     
     if (!userId || (role !== 'org:admin' && role !== 'org:staff')) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const body = await req.json();
     
+    const validation = resultSchema.safeParse(body);
+    if (!validation.success) {
+        return NextResponse.json({ error: "Invalid payload", details: validation.error.flatten() }, { status: 400 });
+    }
+
+    const data = validation.data;
+    
     const newResult = {
       id: nanoid(),
-      studentId: body.studentId,
-      studentName: body.studentName,
-      classId: body.classId,
-      term: body.term,
-      academicYear: body.academicYear,
-      subjects: typeof body.subjects === 'string' ? body.subjects : JSON.stringify(body.subjects),
-      totalScore: body.totalScore,
-      averageScore: body.averageScore,
-      grade: body.grade,
-      teacherComment: body.teacherComment,
-      headTeacherComment: body.headTeacherComment,
-      status: body.status,
+      studentId: data.studentId,
+      studentName: data.studentName,
+      classId: data.classId,
+      term: data.term,
+      academicYear: data.academicYear,
+      subjects: typeof data.subjects === 'string' ? data.subjects : JSON.stringify(data.subjects),
+      totalScore: data.totalScore,
+      averageScore: data.averageScore,
+      grade: data.grade,
+      teacherComment: data.teacherComment,
+      headTeacherComment: data.headTeacherComment,
+      status: data.status,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
 
-    await db.insert(results).values(newResult);
+    // Transactional write: Insert Result + Audit Log
+    await db.transaction(async (tx) => {
+        await tx.insert(results).values(newResult);
+
+        // Audit Log
+        await tx.insert(auditLogs).values({
+            id: nanoid(),
+            userId: userId,
+            role: role,
+            action: 'CREATE',
+            entity: 'Result',
+            details: JSON.stringify({ resultId: newResult.id, studentId: newResult.studentId }),
+            timestamp: Date.now()
+        });
+    });
 
     return NextResponse.json({ success: true, result: newResult });
   } catch (error) {
-    console.error("Error creating result:", error);
-    return NextResponse.json({ error: "Failed to create result" }, { status: 500 });
+    if (process.env.NODE_ENV !== 'production') console.error("Error creating result:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

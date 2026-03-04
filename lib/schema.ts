@@ -61,6 +61,22 @@ export const results = sqliteTable('results', {
   }
 });
 
+// Audit Logs Table
+export const auditLogs = sqliteTable('audit_logs', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  role: text('role').notNull(),
+  action: text('action').notNull(), // 'CREATE', 'UPDATE', 'DELETE'
+  entity: text('entity').notNull(), // 'Attendance', 'Result', 'Pupil'
+  details: text('details'), // JSON string of changes
+  timestamp: integer('timestamp').notNull(),
+}, (table) => {
+  return {
+    userIdIdx: index('audit_logs_user_id_idx').on(table.userId),
+    timestampIdx: index('audit_logs_timestamp_idx').on(table.timestamp),
+  }
+});
+
 // Loan Requests Table
 export const loanRequests = sqliteTable('loan_requests', {
   id: text('id').primaryKey(),
@@ -96,18 +112,19 @@ export const staffAttendance = sqliteTable('staff_attendance', {
 export const attendance = sqliteTable('attendance', {
   id: text('id').primaryKey(),
   date: text('date').notNull(), // YYYY-MM-DD
+  time: text('time').notNull(), // HH:MM:SS
   studentId: text('student_id').notNull().references(() => pupils.id, { onDelete: 'cascade' }),
   studentName: text('student_name').notNull(),
   classId: text('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
   status: text('status').notNull(), // Present, Absent, Late
-  markedBy: text('marked_by').notNull(), // Staff ID/Email
+  markedBy: text('marked_by').notNull(), // Staff ID
   timestamp: integer('timestamp').notNull(),
 }, (table) => {
   return {
     studentIdIdx: index('attendance_student_id_idx').on(table.studentId),
     classIdIdx: index('attendance_class_id_idx').on(table.classId),
     dateIdx: index('attendance_date_idx').on(table.date),
-    uniqueAttendance: unique().on(table.studentId, table.date),
+    uniqueRecord: unique().on(table.studentId, table.date),
   }
 });
 

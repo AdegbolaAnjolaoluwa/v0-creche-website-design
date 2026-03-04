@@ -26,10 +26,24 @@ export async function POST(req: NextRequest) {
   try {
     // 1. Rate Limiting
     if (ratelimit) {
-      const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
-      const { success } = await ratelimit.limit(ip);
-      if (!success) {
-        return NextResponse.json({ error: "Too many login attempts. Please try again later." }, { status: 429 });
+      try {
+          const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
+          const { success } = await ratelimit.limit(ip);
+          if (!success) {
+            return NextResponse.json({ error: "Too many login attempts. Please try again later." }, { status: 429 });
+          }
+      } catch (e) {
+          // If Rate Limiter fails (e.g. Redis down), we FAIL CLOSED for security on login
+          if (process.env.NODE_ENV !== 'production') console.error("Rate limiter error:", e);
+          
+          // Log structured error for monitoring
+          console.error(JSON.stringify({
+             event: "RATE_LIMIT_FAILURE",
+             error: e instanceof Error ? e.message : "Unknown error",
+             timestamp: new Date().toISOString()
+          }));
+
+          return NextResponse.json({ error: "Login unavailable. Please try again later." }, { status: 503 });
       }
     }
 
@@ -71,7 +85,10 @@ export async function POST(req: NextRequest) {
     return response;
 
   } catch (error) {
-    console.error("Parent login error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    // Sanitize error in production
+    if (process.env.NODE_ENV !== "production") {
+        console.error("Parent login error:", error);
+    }
+    return NextResponse.json({ error: "Authentication Failed" }, { status: 500 });
   }
 }

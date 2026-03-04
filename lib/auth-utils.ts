@@ -14,7 +14,9 @@ export async function signParentToken(payload: { pupilId: string }) {
 
 export async function verifyParentToken(token: string) {
   try {
-    const { payload } = await jwtVerify(token, secret)
+    const { payload } = await jwtVerify(token, secret, {
+      algorithms: ['HS256']
+    })
     return payload as { pupilId: string }
   } catch (error) {
     return null

@@ -7,4 +7,11 @@ Sentry.init({
 
   enableLogs: false,
   sendDefaultPii: false,
+  beforeSend(event) {
+    if (event.request?.headers) {
+      delete event.request.headers['Authorization'];
+      delete event.request.headers['Cookie'];
+    }
+    return event;
+  },
 });

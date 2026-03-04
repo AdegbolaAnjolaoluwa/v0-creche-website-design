@@ -9,8 +9,10 @@ const nextConfig = {
     unoptimized: true,
   },
  
-  eslint: {
-    ignoreDuringBuilds: true,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
   },
 }
 

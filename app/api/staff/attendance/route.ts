@@ -3,9 +3,24 @@ import { db } from "@/lib/db";
 import { staffAttendance } from "@/lib/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { auth } from "@clerk/nextjs/server";
+import { z } from "zod";
+
+const attendanceSchema = z.object({
+  email: z.string().email(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  time: z.string().regex(/^\d{2}:\d{2}:\d{2}$/),
+});
 
 export async function GET(req: NextRequest) {
   try {
+    const { userId, sessionClaims } = await auth();
+    const role = (sessionClaims?.metadata as any)?.role;
+
+    if (!userId || (role !== 'org:staff' && role !== 'org:admin')) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const searchParams = req.nextUrl.searchParams;
     const email = searchParams.get("email");
 
@@ -21,19 +36,28 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(records);
 
   } catch (error) {
-    console.error("Error fetching staff attendance:", error);
+    if (process.env.NODE_ENV !== 'production') console.error("Error fetching staff attendance:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
     try {
-        const body = await req.json();
-        const { email, date, time } = body;
+        const { userId, sessionClaims } = await auth();
+        const role = (sessionClaims?.metadata as any)?.role;
 
-        if (!email || !date || !time) {
-            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        if (!userId || (role !== 'org:staff' && role !== 'org:admin')) {
+          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
+
+        const body = await req.json();
+        const validation = attendanceSchema.safeParse(body);
+
+        if (!validation.success) {
+            return NextResponse.json({ error: "Invalid payload", details: validation.error.flatten() }, { status: 400 });
+        }
+
+        const { email, date, time } = validation.data;
 
         // Check if already marked for this date
         const existing = await db.select().from(staffAttendance).where(
@@ -60,7 +84,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, record: newRecord });
 
     } catch (error) {
-        console.error("Error marking staff attendance:", error);
+        if (process.env.NODE_ENV !== 'production') console.error("Error marking staff attendance:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
