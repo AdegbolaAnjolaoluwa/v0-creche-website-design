@@ -3,19 +3,30 @@ import { db } from "@/lib/db";
 import { users, pupils, results, parentPupil } from "@/lib/schema";
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { verifyParentToken } from "@/lib/auth-utils";
 
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
     const email = searchParams.get("email");
-    const pupilIdParam = searchParams.get("pupilId");
 
     let pupilId = "";
 
-    if (pupilIdParam) {
-        // Direct access via Pupil ID login
-        pupilId = pupilIdParam;
-    } else if (email) {
+    // 1. Check for Secure Parent Session Cookie (Priority)
+    const cookie = req.cookies.get("parent_session");
+    
+    if (cookie) {
+        const payload = await verifyParentToken(cookie.value);
+        if (payload && payload.pupilId) {
+            pupilId = payload.pupilId;
+        } else {
+             // Invalid token, but maybe they are using email flow?
+             // Let's not block yet, but note it.
+        }
+    }
+
+    // 2. Fallback to Email Link (Clerk) if no cookie or cookie failed
+    if (!pupilId && email) {
         // Standard access via Email Link
         // Check if linked
         const links = await db.select().from(parentPupil).where(eq(parentPupil.parentEmail, email));
@@ -24,18 +35,20 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ notLinked: true });
         }
         pupilId = links[0].pupilId;
-    } else {
-        return NextResponse.json({ error: "Missing identifier (email or pupilId)" }, { status: 400 });
+    } 
+    
+    if (!pupilId) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 2. Fetch Pupil Details
+    // 3. Fetch Pupil Details
     const pupilData = await db.select().from(pupils).where(eq(pupils.id, pupilId));
     
     if (pupilData.length === 0) {
          return NextResponse.json({ error: "Pupil not found" }, { status: 404 });
     }
 
-    // 3. Fetch Results
+    // 4. Fetch Results
     const pupilResults = await db.select().from(results).where(eq(results.studentId, pupilId));
 
     return NextResponse.json({

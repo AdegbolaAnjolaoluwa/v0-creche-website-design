@@ -1,4 +1,4 @@
 "use client"
 
-export { default } from "@/app/admin/results/new/page"
+export { default } from "@/app/(protected)/admin/results/new/page"
 

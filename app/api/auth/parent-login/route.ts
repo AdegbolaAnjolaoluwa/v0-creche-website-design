@@ -1,15 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { pupils, parentPupil } from "@/lib/schema";
-import { eq, and } from "drizzle-orm";
+import { pupils } from "@/lib/schema";
+import { eq } from "drizzle-orm";
+import { signParentToken } from "@/lib/auth-utils";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
-// This is a "Mock" login for Parents using Pupil ID
-// In a real app, you'd want a more secure way (e.g. password set by admin, or date of birth verification)
-// For now, we assume "Password" might be the Date of Birth or a specific code.
-// Let's assume the "Password" field in the login form is checking against the Pupil's Date of Birth (YYYY-MM-DD) for verification.
+// Initialize Rate Limiter (Only if env vars are present, else skip or mock)
+const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    })
+  : null;
+
+const ratelimit = redis
+  ? new Ratelimit({
+      redis: redis,
+      limiter: Ratelimit.slidingWindow(5, "60 s"),
+      analytics: true,
+    })
+  : null;
 
 export async function POST(req: NextRequest) {
   try {
+    // 1. Rate Limiting
+    if (ratelimit) {
+      const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
+      const { success } = await ratelimit.limit(ip);
+      if (!success) {
+        return NextResponse.json({ error: "Too many login attempts. Please try again later." }, { status: 429 });
+      }
+    }
+
     const body = await req.json();
     const { pupilId, password } = body;
 
@@ -17,30 +40,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing Credentials" }, { status: 400 });
     }
 
-    // 1. Find Pupil
+    // 2. Find Pupil
     const pupil = await db.select().from(pupils).where(eq(pupils.id, pupilId)).limit(1);
 
     if (pupil.length === 0) {
-      return NextResponse.json({ error: "Invalid Pupil ID" }, { status: 401 });
+      // Return generic error to prevent enumeration
+      return NextResponse.json({ error: "Invalid Credentials" }, { status: 401 });
     }
 
     const foundPupil = pupil[0];
 
-    // 2. Verify Password (using Date of Birth as password for simplicity/demo as requested)
-    // In production, use a hashed password field in a 'parent_accounts' table.
-    // Ensure the date format matches what the user types (e.g. YYYY-MM-DD)
+    // 3. Verify Password (Date of Birth)
     if (foundPupil.dateOfBirth !== password) {
-         return NextResponse.json({ error: "Invalid Password (Use Date of Birth: YYYY-MM-DD)" }, { status: 401 });
+         return NextResponse.json({ error: "Invalid Credentials" }, { status: 401 });
     }
 
-    // 3. Success
-    // Since we aren't using Clerk for this specific "Pupil ID" flow in this custom route,
-    // we simply return success. The frontend will redirect.
-    // Note: This bypasses Clerk's session. The parent dashboard needs to handle "Unauthenticated" state 
-    // by checking for a query param or a custom cookie if we went that route.
-    // For now, we are just validating credentials.
+    // 4. Generate JWT
+    const token = await signParentToken({ pupilId: foundPupil.id });
+
+    // 5. Set Cookie
+    const response = NextResponse.json({ success: true });
+    response.cookies.set("parent_session", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 60 * 60 * 24 // 24 hours
+    });
     
-    return NextResponse.json({ success: true, pupil: foundPupil });
+    return response;
 
   } catch (error) {
     console.error("Parent login error:", error);

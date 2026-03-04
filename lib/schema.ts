@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index, unique } from 'drizzle-orm/sqlite-core';
 
 // Users Table (Synced with Clerk via Webhooks mostly, but good for local joins)
 export const users = sqliteTable('users', {
@@ -11,12 +11,36 @@ export const users = sqliteTable('users', {
   updatedAt: integer('updated_at').notNull(),
 });
 
+// Classes Table
+export const classes = sqliteTable('classes', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(), // Creche, Nursery 1, etc.
+  description: text('description'),
+  ageRange: text('age_range'),
+  capacity: integer('capacity'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+});
+
+// Pupils Table
+export const pupils = sqliteTable('pupils', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  classId: text('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }), // Linked to class ID/Name
+  gender: text('gender').notNull(),
+  dateOfBirth: text('date_of_birth').notNull(),
+  guardians: text('guardians').notNull(), // JSON string of guardians array
+  enrollmentDate: text('enrollment_date').notNull(),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+});
+
 // Results Table
 export const results = sqliteTable('results', {
   id: text('id').primaryKey(),
-  studentId: text('student_id').notNull(),
+  studentId: text('student_id').notNull().references(() => pupils.id, { onDelete: 'cascade' }),
   studentName: text('student_name').notNull(),
-  classId: text('class_id').notNull(),
+  classId: text('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
   term: text('term').notNull(), // Term 1, Term 2, Term 3
   academicYear: text('academic_year').notNull(),
   subjects: text('subjects').notNull(), // JSON string of subjects and scores
@@ -32,18 +56,9 @@ export const results = sqliteTable('results', {
   return {
     studentIdIdx: index('results_student_id_idx').on(table.studentId),
     classIdIdx: index('results_class_id_idx').on(table.classId),
+    createdAtIdx: index('results_created_at_idx').on(table.createdAt),
+    statusIdx: index('results_status_idx').on(table.status),
   }
-});
-
-// Classes Table
-export const classes = sqliteTable('classes', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(), // Creche, Nursery 1, etc.
-  description: text('description'),
-  ageRange: text('age_range'),
-  capacity: integer('capacity'),
-  createdAt: integer('created_at').notNull(),
-  updatedAt: integer('updated_at').notNull(),
 });
 
 // Loan Requests Table
@@ -81,9 +96,9 @@ export const staffAttendance = sqliteTable('staff_attendance', {
 export const attendance = sqliteTable('attendance', {
   id: text('id').primaryKey(),
   date: text('date').notNull(), // YYYY-MM-DD
-  studentId: text('student_id').notNull(),
+  studentId: text('student_id').notNull().references(() => pupils.id, { onDelete: 'cascade' }),
   studentName: text('student_name').notNull(),
-  classId: text('class_id').notNull(),
+  classId: text('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
   status: text('status').notNull(), // Present, Absent, Late
   markedBy: text('marked_by').notNull(), // Staff ID/Email
   timestamp: integer('timestamp').notNull(),
@@ -92,6 +107,7 @@ export const attendance = sqliteTable('attendance', {
     studentIdIdx: index('attendance_student_id_idx').on(table.studentId),
     classIdIdx: index('attendance_class_id_idx').on(table.classId),
     dateIdx: index('attendance_date_idx').on(table.date),
+    uniqueAttendance: unique().on(table.studentId, table.date),
   }
 });
 
@@ -125,17 +141,4 @@ export const parentPupil = sqliteTable('parent_pupil', {
   parentEmail: text('parent_email').notNull(),
   pupilId: text('pupil_id').notNull(),
   createdAt: integer('created_at').notNull(),
-});
-
-// Pupils Table
-export const pupils = sqliteTable('pupils', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  classId: text('class_id').notNull(), // Linked to class ID/Name
-  gender: text('gender').notNull(),
-  dateOfBirth: text('date_of_birth').notNull(),
-  guardians: text('guardians').notNull(), // JSON string of guardians array
-  enrollmentDate: text('enrollment_date').notNull(),
-  createdAt: integer('created_at').notNull(),
-  updatedAt: integer('updated_at').notNull(),
 });
