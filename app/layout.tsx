@@ -19,8 +19,8 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider dynamic>
-      <html lang="en">
-        <body className={`${geist.className} ${geistMono.className} antialiased`}>
+      <html lang="en" suppressHydrationWarning>
+        <body className={`${geist.className} ${geistMono.className} antialiased`} suppressHydrationWarning>
           {children}
           <Analytics />
         </body>

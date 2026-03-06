@@ -1,94 +1,52 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { dailyReports } from "@/lib/schema";
 import { auth } from "@clerk/nextjs/server";
-import { eq, and, sql } from "drizzle-orm";
-import { nanoid } from "nanoid";
+import { desc, eq } from "drizzle-orm";
 
-// Mock data for seeding
-const mockReports = [
-  {
-    id: "rep_1",
-    date: new Date().toISOString().split('T')[0],
-    studentId: "all",
-    classId: "Nursery 2",
-    content: JSON.stringify({
-      topicsTaught: "Numbers 1-10",
-      incidentReport: "None",
-      homework: "Trace numbers",
-      generalComment: "Great day overall"
-    }),
-    submittedBy: "staff@example.com",
-    createdAt: Date.now()
-  }
-];
-
-export async function GET(req: NextRequest) {
+export async function GET(req: Request) {
   try {
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const classId = searchParams.get("classId");
-    const date = searchParams.get("date");
-
-    // Check if reports table is empty
-    const countResult = await db.select({ count: sql<number>`count(*)` }).from(dailyReports);
-    const count = countResult[0].count;
-
-    if (count === 0) {
-      console.log("Seeding daily reports database...");
-      await db.insert(dailyReports).values(mockReports);
-    }
-
-    let query = db.select().from(dailyReports);
-    
-    // Build dynamic query
-    if (classId && date) {
-        // @ts-ignore
-        query = query.where(and(eq(dailyReports.classId, classId), eq(dailyReports.date, date)));
-    } else if (classId) {
-        // @ts-ignore
-        query = query.where(eq(dailyReports.classId, classId));
-    }
-
-    const records = await query;
-    return NextResponse.json(records);
+    // Check for admin role ideally
+    const allReports = await db.select().from(dailyReports).orderBy(desc(dailyReports.date));
+    return NextResponse.json(allReports);
   } catch (error) {
-    console.error("Error fetching reports:", error);
-    return NextResponse.json({ error: "Failed to fetch reports" }, { status: 500 });
+    console.error("Failed to fetch reports:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const { userId, sessionClaims } = await auth();
-    const role = (sessionClaims?.metadata as any)?.role;
-    
-    if (!userId || (role !== 'org:admin' && role !== 'org:staff')) {
+    const { userId } = await auth();
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
     const { date, studentId, classId, content, submittedBy } = body;
 
-    const newReport = {
-      id: nanoid(),
+    if (!date || !classId || !content || !submittedBy) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const newReport = await db.insert(dailyReports).values({
+      id: crypto.randomUUID(),
       date,
       studentId: studentId || "all",
       classId,
-      content: typeof content === 'string' ? content : JSON.stringify(content),
-      submittedBy: submittedBy || userId,
+      content: JSON.stringify(content),
+      submittedBy,
       createdAt: Date.now(),
-    };
+    }).returning();
 
-    await db.insert(dailyReports).values(newReport);
-
-    return NextResponse.json({ success: true, report: newReport });
+    return NextResponse.json(newReport[0]);
   } catch (error) {
-    console.error("Error creating report:", error);
-    return NextResponse.json({ error: "Failed to create report" }, { status: 500 });
+    console.error("Failed to create report:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

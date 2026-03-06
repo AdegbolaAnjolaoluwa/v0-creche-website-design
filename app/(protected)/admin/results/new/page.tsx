@@ -7,25 +7,17 @@ import Link from "next/link"
 import { useClerk, useUser } from "@clerk/nextjs"
 import Image from "next/image"
 import { useRouter, usePathname } from "next/navigation"
-import { ArrowLeft, ChevronDown, LogOut, Save, User } from "lucide-react"
+import { ArrowLeft, Save } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 
-import { pupilsData, type Pupil, classesData, resultsData, type ResultRecord, calculateAttendanceScore, calculateFinalScore } from "@/lib/data"
+import { pupilsData, type Pupil, classesData, calculateAttendanceScore, calculateFinalScore } from "@/lib/data"
 
 const subjects = {
   creche: ["Motor Skills", "Social Interaction", "Basic Recognition", "Sensory Development"],
@@ -47,14 +39,6 @@ type CurrentUser = {
   email?: string
   classId?: string
 }
-
-type PupilAttendanceRecord = {
-  pupilId: string
-  date: string
-  status: "Present" | "Absent" | "Late"
-}
-
-const PUPIL_ATTENDANCE_KEY = "pupilAttendance"
 
 export default function NewResult() {
   const { signOut } = useClerk();
@@ -85,8 +69,6 @@ export default function NewResult() {
   const [teacherComment, setTeacherComment] = useState("")
   const [proprietressComment, setProprietressComment] = useState("")
 
-  const RESULTS_STORAGE_KEY = "adminResults"
-
   const handleLogout = () => { signOut(() => { router.push(`/login?type=${expectedRole}`) }) }
 
   useEffect(() => {
@@ -101,16 +83,8 @@ export default function NewResult() {
         setAssignedClassName(cls.name)
         // Auto-select class for staff
         const key = Object.keys(subjects).find(k => {
-            // This is a bit hacky mapping from class name to subject key
-            // Ideally we should have a better mapping
             return cls.name.toLowerCase().includes(k) || k.includes("creche") // Fallback
         })
-        // But the original code had handleClassChange logic.
-        // Let's just set the selectedClass if we can match it
-        // The original logic used `mapPupilClassToKey` which is not imported or available here directly?
-        // Wait, let's check if mapPupilClassToKey is available. It was in the previous file content I replaced.
-        // It seems it was removed or I missed it.
-        // Let's just set assignedClassName and let the UI handle restriction.
         setSelectedClass(cls.name) // If the UI uses this
       }
     }
@@ -220,13 +194,9 @@ export default function NewResult() {
 
         const roundedAverageScore = Number(averageScore.toFixed(1))
 
-        // Mock attendance for now if API not ready, or we can fetch it?
-        // Let's assume we can't easily fetch full attendance history in one go here without an API call
-        // For the sake of "Create", let's default to 100 or 0, or maybe we can fetch it via API later
-        // Ideally: await fetch(`/api/admin/pupils/${pupilId}/attendance-stats`)
         const attendancePercentage = 0 
         const attendanceScore = calculateAttendanceScore(attendancePercentage)
-        const finalScore = calculateFinalScore(roundedAverageScore, attendanceScore)
+        // const finalScore = calculateFinalScore(roundedAverageScore, attendanceScore) // Unused variable
 
         const payload = {
           studentId: pupilId,
@@ -262,37 +232,7 @@ export default function NewResult() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-        <Link href="/staff/dashboard" className="flex items-center gap-2 font-semibold">
-          <Image
-            src="/logo.jpg"
-            alt="Bayhood Preparatory School logo"
-            width={220}
-            height={66}
-            className="h-14 w-auto"
-          />
-        </Link>
-        <div className="flex-1"></div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="relative h-8 flex items-center gap-2">
-              <User className="h-4 w-4" />
-              <span className="hidden md:inline-block">{currentUser?.email || "Staff Account"}</span>
-              <ChevronDown className="h-4 w-4 opacity-50" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </header>
-      <main className="flex-1 p-4 md:p-8">
+    <div className="flex flex-col gap-6 p-4 md:gap-8 md:p-8">
         <div className="mx-auto max-w-4xl">
           <div className="flex items-center gap-4 mb-8">
             <Button variant="outline" size="icon" asChild>
@@ -620,7 +560,6 @@ export default function NewResult() {
             </Tabs>
           </form>
         </div>
-      </main>
     </div>
   )
 }

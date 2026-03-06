@@ -2,25 +2,16 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
-import { useRouter, useParams } from "next/navigation"
-import { ArrowLeft, BookOpen, Calendar, ChevronDown, Edit, FileText, Home, LogOut, User, Users, Phone, Clock } from "lucide-react"
+import { useParams, useRouter } from "next/navigation"
+import { ArrowLeft, Clock, FileText, Phone, User } from "lucide-react"
 
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-import { pupilsData, type Pupil, resultsData, type ResultRecord } from "@/lib/data"
+import { pupilsData, type Pupil, type ResultRecord } from "@/lib/data"
 
 // Types
 type PupilAttendanceRecord = {
@@ -33,9 +24,6 @@ type PupilAttendanceRecord = {
   status: "Present" | "Absent" | "Late"
   createdAt: string
 }
-
-const PUPIL_ATTENDANCE_KEY = "pupilAttendance"
-const RESULTS_STORAGE_KEY = "adminResults"
 
 export default function PupilProfilePage() {
   const router = useRouter()
@@ -101,7 +89,7 @@ export default function PupilProfilePage() {
 
   if (!pupil) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center">
+      <div className="flex h-full flex-col items-center justify-center p-8">
         <h1 className="text-2xl font-bold">Pupil Not Found</h1>
         <Button variant="outline" className="mt-4" onClick={() => router.back()}>Go Back</Button>
       </div>
@@ -116,37 +104,7 @@ export default function PupilProfilePage() {
   const attendanceRate = totalDays > 0 ? Math.round(((presentDays + lateDays) / totalDays) * 100) : 0
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-        <div className="flex items-center gap-2">
-          <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
-            <Image
-              src="/logo.jpg"
-              alt="Bayhood Preparatory School logo"
-              width={220}
-              height={66}
-              className="h-14 w-auto"
-            />
-          </Link>
-        </div>
-        <div className="flex-1"></div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="relative h-8 flex items-center gap-2">
-              <User className="h-4 w-4" />
-              <span className="hidden md:inline-block">Admin User</span>
-              <ChevronDown className="h-4 w-4 opacity-50" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Log out</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </header>
-
-      <main className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-8">
+    <div className="flex flex-col gap-6 p-4 md:gap-8 md:p-8">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" asChild>
             <Link href="/admin/pupils">
@@ -323,11 +281,10 @@ export default function PupilProfilePage() {
                     )}
                   </CardContent>
                 </Card>
-              </TabsContent>
+            </TabsContent>
             </Tabs>
           </div>
         </div>
-      </main>
     </div>
   )
 }

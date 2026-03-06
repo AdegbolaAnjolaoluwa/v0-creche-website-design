@@ -148,131 +148,13 @@ export default function AdminDailyReportsPage() {
   const handleLogout = () => { signOut(() => { router.push("/login") }) }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-        <div className="flex items-center gap-2">
-          <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
-            <Image
-              src="/logo.jpg"
-              alt="Bayhood Preparatory School logo"
-              width={220}
-              height={66}
-              className="h-14 w-auto"
-            />
-          </Link>
-        </div>
-        <div className="flex-1"></div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="relative h-8 flex items-center gap-2">
-              <User className="h-4 w-4" />
-              <span className="hidden md:inline-block">{currentUser?.email || "Admin User"}</span>
-              <ChevronDown className="h-4 w-4 opacity-50" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </header>
-      <div className="grid flex-1 md:grid-cols-[240px_1fr]">
-        <aside className="hidden border-r bg-muted/40 md:block">
-          <nav className="grid gap-2 p-4 text-sm">
-            <Link
-              href="/admin/dashboard"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
-            >
-              <Home className="h-4 w-4" />
-              Dashboard
-            </Link>
-            <Link
-              href="/admin/pupils"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
-            >
-              <Users className="h-4 w-4" />
-              Pupils
-            </Link>
-            <Link
-              href="/admin/results"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
-            >
-              <BookOpen className="h-4 w-4" />
-              Results
-            </Link>
-            <Link
-              href="/admin/classes"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H19"></path>
-                <path d="M20 8c0-1.1-.9-2-2-2h-5"></path>
-                <path d="M4 4v16"></path>
-                <path d="M8 4h9"></path>
-                <path d="M9 8h6"></path>
-              </svg>
-              Classes
-            </Link>
-            <Link
-              href="/admin/attendance"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
-            >
-              <Calendar className="h-4 w-4" />
-              Attendance
-            </Link>
-            <Link
-              href="/admin/daily-reports"
-              className="flex items-center gap-3 rounded-lg bg-primary px-3 py-2 text-primary-foreground transition-all hover:text-primary-foreground"
-            >
-              <BookOpen className="h-4 w-4" />
-              Daily Reports
-            </Link>
-            <Link
-              href="/admin/loan"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
-            >
-              <Calendar className="h-4 w-4" />
-              Staff Loan
-            </Link>
-            <Link
-              href="/admin/settings"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-              </svg>
-              Settings
-            </Link>
-          </nav>
-        </aside>
-        <main className="flex flex-col gap-6 p-4 md:gap-8 md:p-8">
+    <div className="flex flex-col gap-6 p-4 md:gap-8 md:p-8">
+      <div className="flex justify-end">
+        <Button variant="outline" onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Sign out
+        </Button>
+      </div>
           <div className="flex flex-col gap-2">
             <h1 className="text-2xl font-bold tracking-tight">Daily Reports</h1>
             <p className="text-muted-foreground">
@@ -469,8 +351,6 @@ export default function AdminDailyReportsPage() {
               </div>
             </CardContent>
           </Card>
-        </main>
-      </div>
     </div>
   )
 }

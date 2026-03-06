@@ -1,41 +1,67 @@
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, BookOpen, Calendar, Clock, GraduationCap, Heart, Users } from "lucide-react"
+import { 
+  ArrowRight, 
+  BookOpen, 
+  Calendar, 
+  Clock, 
+  GraduationCap, 
+  Heart, 
+  Users, 
+  CheckCircle2, 
+  Phone, 
+  Mail, 
+  Baby, 
+  Gamepad2, 
+  School,
+  Sprout 
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-background font-sans">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-20 items-center justify-between">
           <div className="flex items-center gap-2">
             <Image
               src="/logo.jpg"
-              alt="School logo"
-              width={220}
-              height={66}
-              className="h-14 w-auto"
+              alt="Bayhood Preparatory School Logo"
+              width={180}
+              height={54}
+              className="h-12 w-auto object-contain"
+              priority
             />
           </div>
-          <nav className="hidden md:flex gap-6">
-            <Link href="/" className="text-sm font-medium hover:text-primary">
+          
+          <nav className="hidden md:flex items-center gap-8">
+            <Link href="/" className="text-sm font-medium hover:text-primary transition-colors">
               Home
             </Link>
-            <Link href="#about" className="text-sm font-medium hover:text-primary">
+            <Link href="#about" className="text-sm font-medium hover:text-primary transition-colors">
               About Us
             </Link>
-            <Link href="#programs" className="text-sm font-medium hover:text-primary">
+            <Link href="#programs" className="text-sm font-medium hover:text-primary transition-colors">
               Programs
             </Link>
-            <Link href="#contact" className="text-sm font-medium hover:text-primary">
+            <Link href="#contact" className="text-sm font-medium hover:text-primary transition-colors">
               Contact
             </Link>
           </nav>
-          <div className="flex items-center gap-4">
-            <Link href="/login">
-              <Button size="sm">Login</Button>
+          
+          <div className="flex items-center gap-3">
+            <Link href="/login?tab=staff">
+              <Button variant="outline" size="sm" className="hidden sm:flex">
+                Staff Login
+              </Button>
+            </Link>
+            <Link href="/login?tab=parent">
+              <Button size="sm" className="bg-[#1e293b] hover:bg-[#0f172a] text-white">
+                Parent Portal
+              </Button>
             </Link>
           </div>
         </div>
@@ -43,445 +69,265 @@ export default function Home() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-b from-blue-50 to-background">
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-[#fffdf5]">
           <div className="container px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
-              <div className="space-y-4">
-                <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary">
+              <div className="space-y-6">
+                <div className="inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
                   Nurturing Young Minds
                 </div>
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  Where Learning Begins with Love and Care
+                <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+                  Where Learning Begins with <span className="text-red-500">Love</span> and <span className="text-blue-500">Care</span>
                 </h1>
                 <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Bayhood Preperatory School provides a safe, nurturing environment where children can explore, learn, and grow.
+                  Bayhood Preparatory School provides a safe, nurturing environment where children can explore, learn, and grow.
                   Our dedicated staff and innovative curriculum ensure your child gets the best start in life.
                 </p>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Link href="/login">
-                    <Button className="w-full min-[400px]:w-auto">
-                      Get Started
+                <div className="flex flex-col gap-3 min-[400px]:flex-row pt-4">
+                  <Link href="/login?tab=parent">
+                    <Button size="lg" className="bg-[#1e293b] hover:bg-[#0f172a] text-white w-full min-[400px]:w-auto">
+                      View Results
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
                   <Link href="#programs">
-                    <Button variant="outline" className="w-full min-[400px]:w-auto">
+                    <Button variant="outline" size="lg" className="w-full min-[400px]:w-auto">
                       Explore Programs
                     </Button>
                   </Link>
                 </div>
               </div>
-              <div className="mx-auto w-full max-w-[500px] aspect-video overflow-hidden rounded-xl">
+              <div className="mx-auto w-full max-w-[600px] relative aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl border-4 border-white transform rotate-1 hover:rotate-0 transition-transform duration-500">
                 <Image
                   src="/hero-section.jpg"
-                  width={800}
-                  height={500}
-                  alt="Happy children learning and playing"
-                  className="object-cover w-full h-full"
+                  fill
+                  alt="Children learning in a classroom"
+                  className="object-cover"
+                  priority
                 />
               </div>
             </div>
           </div>
         </section>
 
-        {/* Features */}
-        <section className="w-full py-12 md:py-24 lg:py-32">
+        {/* Why Choose Us */}
+        <section id="about" className="w-full py-16 md:py-24 bg-white">
           <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary">Our Approach</div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  Why Choose Bayhood Preparatory School ?
-                </h2>
-                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  We combine play-based learning with structured activities to create a balanced educational experience.
-                </p>
+            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+              <div className="inline-block rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
+                OUR APPROACH
               </div>
+              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+                Why Choose Bayhood Preparatory School?
+              </h2>
+              <p className="max-w-[700px] text-muted-foreground md:text-lg">
+                We combine play-based learning with structured activities to create a balanced educational experience.
+              </p>
             </div>
-            <div className="mx-auto grid max-w-5xl items-center gap-6 py-12 lg:grid-cols-3">
-              <div className="flex flex-col items-center space-y-2 rounded-lg border bg-background p-6 shadow-sm">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                  <GraduationCap className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold">Expert Teachers</h3>
-                <p className="text-center text-muted-foreground">
-                  Qualified and experienced educators dedicated to child development.
-                </p>
-              </div>
-              <div className="flex flex-col items-center space-y-2 rounded-lg border bg-background p-6 shadow-sm">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                  <Heart className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold">Nurturing Environment</h3>
-                <p className="text-center text-muted-foreground">
-                  A safe, loving space where every child feels valued and supported.
-                </p>
-              </div>
-              <div className="flex flex-col items-center space-y-2 rounded-lg border bg-background p-6 shadow-sm">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                  <BookOpen className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold">Holistic Curriculum</h3>
-                <p className="text-center text-muted-foreground">
-                  Focusing on academic, social, emotional, and physical growth.
-                </p>
-              </div>
+            
+            <div className="grid gap-8 md:grid-cols-3">
+              <Card className="border-none shadow-lg bg-red-50/50 hover:bg-red-50 transition-colors">
+                <CardHeader>
+                  <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4 text-red-600">
+                    <Heart className="h-6 w-6" />
+                  </div>
+                  <CardTitle>Nurturing Environment</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-base text-gray-600">
+                    We create a loving, supportive space where children feel safe to explore and learn about the world around them.
+                  </CardDescription>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-lg bg-blue-50/50 hover:bg-blue-50 transition-colors">
+                <CardHeader>
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4 text-blue-600">
+                    <BookOpen className="h-6 w-6" />
+                  </div>
+                  <CardTitle>Innovative Curriculum</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-base text-gray-600">
+                    Our program balances academic foundations with creative play and social development tailored for each stage.
+                  </CardDescription>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-lg bg-green-50/50 hover:bg-green-50 transition-colors">
+                <CardHeader>
+                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4 text-green-600">
+                    <GraduationCap className="h-6 w-6" />
+                  </div>
+                  <CardTitle>Qualified Teachers</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-base text-gray-600">
+                    Our experienced educators are passionate about early childhood development and continuous professional growth.
+                  </CardDescription>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>
 
-        {/* Programs */}
-        <section id="programs" className="w-full py-12 md:py-24 lg:py-32 bg-muted/50">
+        {/* Programs Section */}
+        <section id="programs" className="w-full py-16 md:py-24 bg-gray-50">
           <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary">Our Programs</div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Educational Programs</h2>
-                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  We offer age appropriate programs designed to nurture your child's development.
-                </p>
+            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+              <div className="inline-block rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-800">
+                OUR PROGRAMS
               </div>
+              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">
+                Educational Programs
+              </h2>
+              <p className="max-w-[700px] text-muted-foreground md:text-lg">
+                We offer age-appropriate programs designed to nurture your child's development.
+              </p>
             </div>
-            <div className="mx-auto grid max-w-5xl gap-6 py-12 lg:grid-cols-4">
-              <div className="group relative overflow-hidden rounded-lg border bg-background shadow-sm transition-all hover:shadow-md">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80 z-10"></div>
-                <Image
-                  src="/placeholder.svg?height=400&width=600"
-                  width={600}
-                  height={400}
-                  alt="Creche program"
-                  className="h-60 w-full object-cover transition-transform group-hover:scale-105"
-                />
-                <div className="relative z-20 p-6 pt-0 mt-[-40px]">
-                  <h3 className="text-2xl font-bold">Creche</h3>
-                  <p className="mt-2 text-muted-foreground">
-                    For children aged 3 months to 2 years. Focused on nurturing care, sensory play, and early
-                    development milestones.
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Clock className="mr-1 h-4 w-4" />
-                      <span>7:00 AM - 1:00 PM</span>
+
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {[
+                {
+                  title: "Creche",
+                  age: "3 months - 2 years",
+                  desc: "Focused on nurturing care, sensory play, and early development milestones.",
+                  icon: Baby,
+                  color: "text-pink-500",
+                  bg: "bg-pink-100"
+                },
+                {
+                  title: "Nursery 1",
+                  age: "2 - 3 years",
+                  desc: "Introducing structured learning through play, basic concepts, and social skills.",
+                  icon: Sprout,
+                  color: "text-green-500",
+                  bg: "bg-green-100"
+                },
+                {
+                  title: "Preschool",
+                  age: "3 - 5 years",
+                  desc: "Strengthening pre-reading, writing, and early mathematics through structured play.",
+                  icon: School,
+                  color: "text-blue-500",
+                  bg: "bg-blue-100"
+                },
+                {
+                  title: "Playgroup",
+                  age: "Short days",
+                  desc: "Gentle introduction to school with short days focused on social skills, music, and guided play.",
+                  icon: Gamepad2,
+                  color: "text-orange-500",
+                  bg: "bg-orange-100"
+                }
+              ].map((program, i) => (
+                <Card key={i} className="flex flex-col border-none shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader>
+                    <div className={`w-12 h-12 rounded-xl ${program.bg} flex items-center justify-center mb-4 ${program.color}`}>
+                      <program.icon className="h-6 w-6" />
                     </div>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Calendar className="mr-1 h-4 w-4" />
-                      <span>Mon - Fri</span>
+                    <CardTitle>{program.title}</CardTitle>
+                    <CardDescription className="mt-2 font-medium text-primary">
+                      {program.age}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-1">
+                    <p className="text-sm text-muted-foreground mb-6">
+                      {program.desc}
+                    </p>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground mt-auto">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" /> 7:00 AM - 1:00 PM
+                      </div>
                     </div>
-                  </div>
-                  <Button variant="outline" className="mt-4 w-full">
-                    Learn More
-                  </Button>
-                </div>
-              </div>
-              <div className="group relative overflow-hidden rounded-lg border bg-background shadow-sm transition-all hover:shadow-md">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80 z-10"></div>
-                <Image
-                  src="/placeholder.svg?height=400&width=600"
-                  width={600}
-                  height={400}
-                  alt="Nursery 1 program"
-                  className="h-60 w-full object-cover transition-transform group-hover:scale-105"
-                />
-                <div className="relative z-20 p-6 pt-0 mt-[-40px]">
-                  <h3 className="text-2xl font-bold">Nursery 1</h3>
-                  <p className="mt-2 text-muted-foreground">
-                    For children aged 2-3 years. Introducing structured learning through play, basic concepts, and
-                    social skills.
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Clock className="mr-1 h-4 w-4" />
-                      <span>7:00 AM - 3:00 PM</span>
-                    </div>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Calendar className="mr-1 h-4 w-4" />
-                      <span>Mon - Fri</span>
-                    </div>
-                  </div>
-                  <Button variant="outline" className="mt-4 w-full">
-                    Learn More
-                  </Button>
-                </div>
-              </div>
-              <div className="group relative overflow-hidden rounded-lg border bg-background shadow-sm transition-all hover:shadow-md">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80 z-10"></div>
-                <Image
-                  src="/placeholder.svg?height=400&width=600"
-                  width={600}
-                  height={400}
-                  alt="Nursery 2 program"
-                  className="h-60 w-full object-cover transition-transform group-hover:scale-105"
-                />
-                <div className="relative z-20 p-6 pt-0 mt-[-40px]">
-                  <h3 className="text-2xl font-bold">Preschool</h3>
-                  <p className="mt-2 text-muted-foreground">
-                    For children in Preschool 1 and 2 (ages 3-5). Strengthens pre-reading, writing, and early
-                    mathematics through structured play.
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Clock className="mr-1 h-4 w-4" />
-                      <span>7:00 AM - 3:00 PM</span>
-                    </div>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Calendar className="mr-1 h-4 w-4" />
-                      <span>Mon - Fri</span>
-                    </div>
-                  </div>
-                  <Button variant="outline" className="mt-4 w-full">
-                    Learn More
-                  </Button>
-                </div>
-              </div>
-              <div className="group relative overflow-hidden rounded-lg border bg-background shadow-sm transition-all hover:shadow-md">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80 z-10"></div>
-                <Image
-                  src="/placeholder.svg?height=400&width=600"
-                  width={600}
-                  height={400}
-                  alt="Playgroup program"
-                  className="h-60 w-full object-cover transition-transform group-hover:scale-105"
-                />
-                <div className="relative z-20 p-6 pt-0 mt-[-40px]">
-                  <h3 className="text-2xl font-bold">Playgroup</h3>
-                  <p className="mt-2 text-muted-foreground">
-                    Gentle introduction to school with short days focused on social skills, music, and guided play.
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Clock className="mr-1 h-4 w-4" />
-                      <span>8:00 AM - 12:00 PM</span>
-                    </div>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Calendar className="mr-1 h-4 w-4" />
-                      <span>Mon - Fri</span>
-                    </div>
-                  </div>
-                  <Button variant="outline" className="mt-4 w-full">
-                    Learn More
-                  </Button>
-                </div>
-              </div>
+                    <Button variant="outline" className="w-full mt-6">
+                      Learn More
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* Result Portal CTA */}
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-primary/5">
+        {/* Track Progress Section */}
+        <section className="w-full py-16 md:py-24 bg-white">
           <div className="container px-4 md:px-6">
-            <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
-              <div className="space-y-4">
-                <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary">
-                  Result Management
+            <div className="grid gap-12 lg:grid-cols-2 items-center">
+              <div className="space-y-6">
+                <div className="inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
+                  RESULT MANAGEMENT
                 </div>
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  Track Your Child's Progress
+                  Track Your Child's Progress with Ease
                 </h2>
-                <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Our secure result management system allows parents to easily access their child's academic progress,
-                  reports, and assessments.
+                <p className="text-muted-foreground md:text-lg">
+                  Our secure result management system allows parents to easily access their child's academic progress, reports, and assessments from any device.
                 </p>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Link href="/login?type=parent">
-                    <Button className="w-full min-[400px]:w-auto">
+                
+                <div className="flex gap-4 pt-4">
+                  <Link href="/login?tab=parent">
+                    <Button className="bg-[#1e293b] hover:bg-[#0f172a] text-white">
                       Parent Portal
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
-                  <Link href="/login?type=staff">
-                    <Button variant="outline" className="w-full min-[400px]:w-auto">
+                  <Link href="/login?tab=staff">
+                    <Button variant="outline">
                       Staff Login
                     </Button>
                   </Link>
                 </div>
               </div>
-              <div className="mx-auto w-full max-w-[500px] rounded-xl border bg-background p-6 shadow-sm">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold">Result Portal Features</h3>
-                    <p className="text-muted-foreground">Access your child's academic information anytime, anywhere.</p>
-                  </div>
-                  <ul className="grid gap-2">
-                    <li className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4 text-primary"
-                        >
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
+              
+              <div className="bg-gray-50 p-8 rounded-2xl shadow-lg border">
+                <h3 className="text-xl font-bold mb-6">Result Portal Features</h3>
+                <p className="text-sm text-muted-foreground mb-8">
+                  Access your child's academic information anytime, anywhere.
+                </p>
+                <ul className="space-y-4">
+                  {[
+                    "View current and past results instantly",
+                    "Download and print professional report cards",
+                    "Track learning progress over multiple terms",
+                    "Receive real-time notifications for new results"
+                  ].map((feature, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <div className="mt-1 bg-blue-100 rounded-full p-1">
+                        <CheckCircle2 className="h-3 w-3 text-blue-600" />
                       </div>
-                      <span>View current and past results</span>
+                      <span className="text-sm font-medium text-gray-700">{feature}</span>
                     </li>
-                    <li className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4 text-primary"
-                        >
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      </div>
-                      <span>Download and print report cards</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4 text-primary"
-                        >
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      </div>
-                      <span>Track progress over time</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4 text-primary"
-                        >
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      </div>
-                      <span>Receive notifications for new results</span>
-                    </li>
-                  </ul>
-                </div>
+                  ))}
+                </ul>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Contact */}
-        <section id="contact" className="w-full py-12 md:py-24 lg:py-32">
+        {/* Contact Section */}
+        <section id="contact" className="w-full py-16 md:py-24 bg-[#fffdf5]">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary">Get in Touch</div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Contact Us</h2>
-                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Have questions? We're here to help. Reach out to us for more information.
-                </p>
+              <div className="inline-block rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-800">
+                GET IN TOUCH
               </div>
-            </div>
-            <div className="mx-auto grid max-w-5xl gap-6 py-12 lg:grid-cols-2">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h3 className="text-xl font-bold">Visit Us</h3>
-                  <p className="text-muted-foreground">
-                    House 20,Road 18 Diamond Estate 
-                    <br />
-                     Idimu,Lagos 100275
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-bold">Contact Information</h3>
-                  <div className="text-muted-foreground">
-                    <p>Phone: 0809 811 2378</p>
-                    <p>Email: bayhoodpreperatoryschool@gmail.com</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-bold">Hours of Operation</h3>
-                  <p className="text-muted-foreground">
-                    Monday - Friday: 7:00 AM - 6:00 PM
-                    <br />
-                    Saturday - Sunday: Closed
-                  </p>
-                </div>
-              </div>
-              <div className="rounded-lg border bg-card p-6 shadow-sm">
-                <form className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="first-name"
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        First name
-                      </label>
-                      <input
-                        id="first-name"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        placeholder="Enter your first name"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="last-name"
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        Last name
-                      </label>
-                      <input
-                        id="last-name"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        placeholder="Enter your last name"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="email"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Email
-                    </label>
-                    <input
-                      id="email"
-                      type="email"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      placeholder="Enter your email"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="message"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Message
-                    </label>
-                    <textarea
-                      id="message"
-                      className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      placeholder="Enter your message"
-                    ></textarea>
-                  </div>
-                  <Button className="w-full">Send Message</Button>
-                </form>
+              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">
+                Contact Us
+              </h2>
+              <p className="max-w-[600px] text-muted-foreground md:text-lg">
+                Have questions about our programs or enrollment? We're here to help you and your child get started.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 mt-8">
+                <Button variant="outline" className="h-12 px-8 rounded-full shadow-sm bg-white hover:bg-gray-50">
+                  <Mail className="mr-2 h-4 w-4" />
+                  Email Us
+                </Button>
+                <Button variant="outline" className="h-12 px-8 rounded-full shadow-sm bg-white hover:bg-gray-50">
+                  <Phone className="mr-2 h-4 w-4" />
+                  Call Support
+                </Button>
               </div>
             </div>
           </div>
@@ -489,26 +335,17 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="w-full border-t bg-background py-6 md:py-8">
-        <div className="container flex flex-col items-center justify-center gap-4 px-4 md:px-6 md:flex-row md:justify-between">
+      <footer className="w-full py-8 bg-[#1e293b] text-gray-400 text-sm">
+        <div className="container px-4 md:px-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
-            <GraduationCap className="h-6 w-6 text-primary" />
-            <span className="text-lg font-bold">Bayhood Preparatory School</span>
+            <span className="text-lg font-bold text-white"><span className="text-blue-400">Bay</span><span className="text-red-400">hood</span></span>
+            <span>© 2024 Bayhood Preparatory School. All rights reserved.</span>
           </div>
-          <nav className="flex gap-4 sm:gap-6">
-            <Link href="/terms" className="text-xs hover:underline underline-offset-4">
-              Terms of Service
-            </Link>
-            <Link href="/privacy" className="text-xs hover:underline underline-offset-4">
-              Privacy
-            </Link>
-            <Link href="/cookies" className="text-xs hover:underline underline-offset-4">
-              Cookies
-            </Link>
-          </nav>
-          <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Bayhood Preparatory School. All rights reserved.
-          </p>
+          <div className="flex gap-6">
+            <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+            <Link href="/cookies" className="hover:text-white transition-colors">Cookies</Link>
+          </div>
         </div>
       </footer>
     </div>

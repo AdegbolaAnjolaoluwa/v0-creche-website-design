@@ -287,37 +287,7 @@ export default function EditResult() {
   if (!currentUser) return null
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-        <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
-          <Image
-            src="/logo.jpg"
-            alt="Bayhood Preparatory School logo"
-            width={220}
-            height={66}
-            className="h-14 w-auto"
-          />
-        </Link>
-        <div className="flex-1"></div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="relative h-8 flex items-center gap-2">
-              <User className="h-4 w-4" />
-              <span className="hidden md:inline-block">{currentUser?.email || "Admin Account"}</span>
-              <ChevronDown className="h-4 w-4 opacity-50" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </header>
-      <main className="flex-1 p-4 md:p-8">
+    <div className="flex flex-col gap-6 p-4 md:gap-8 md:p-8">
         <div className="mx-auto max-w-4xl">
           <div className="flex items-center gap-4 mb-8">
             <Button variant="outline" size="icon" asChild>
@@ -328,7 +298,7 @@ export default function EditResult() {
             </Button>
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Edit Result</h1>
-              <p className="text-muted-foreground">Update scores, comments, and status for {pupilName}</p>
+              <p className="text-muted-foreground">Modify pupil details and scores</p>
             </div>
           </div>
 
@@ -611,7 +581,6 @@ export default function EditResult() {
             </Tabs>
           </form>
         </div>
-      </main>
     </div>
   )
 }
