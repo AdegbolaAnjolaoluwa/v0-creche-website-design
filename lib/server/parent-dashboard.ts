@@ -3,6 +3,11 @@ import { pupils, results, parentPupil } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 
 export async function getParentDashboardData(identifier: { type: 'cookie' | 'email', value: string }) {
+  const hasDbEnv = Boolean(process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN);
+  if (!hasDbEnv) {
+    return null;
+  }
+
   let pupilId = "";
 
   if (identifier.type === 'cookie') {

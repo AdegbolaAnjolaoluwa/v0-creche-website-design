@@ -5,6 +5,31 @@ import { unstable_cache } from "next/cache";
 
 export const getAdminDashboardData = unstable_cache(
   async () => {
+    const hasDbEnv = Boolean(process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN);
+    if (!hasDbEnv) {
+      return {
+        metrics: {
+          totalPupils: 0,
+          totalClasses: 0,
+          totalResults: 0,
+          totalPublishedResults: 0,
+          totalDraftResults: 0,
+          averageScore: 0,
+          todaysAttendance: 0
+        },
+        recentActivity: [],
+        charts: {
+          gradeDistribution: [],
+          classPerformance: [],
+          termPerformance: [],
+          attendanceStats: [],
+          loanStats: [],
+          totalReports: 0
+        }
+      };
+    }
+
+    try {
     // Parallel fetch for dashboard metrics
     const [
       pupilsCount,
@@ -103,6 +128,28 @@ export const getAdminDashboardData = unstable_cache(
         totalReports: reportsCount[0].count
       }
     };
+    } catch {
+      return {
+        metrics: {
+          totalPupils: 0,
+          totalClasses: 0,
+          totalResults: 0,
+          totalPublishedResults: 0,
+          totalDraftResults: 0,
+          averageScore: 0,
+          todaysAttendance: 0
+        },
+        recentActivity: [],
+        charts: {
+          gradeDistribution: [],
+          classPerformance: [],
+          termPerformance: [],
+          attendanceStats: [],
+          loanStats: [],
+          totalReports: 0
+        }
+      };
+    }
   },
   ['admin-dashboard-stats'],
   { revalidate: 60 } // Cache for 60 seconds

@@ -8,6 +8,18 @@ export async function getStaffDashboardData(email: string, classId: string) {
 
   const getData = unstable_cache(
     async () => {
+        const hasDbEnv = Boolean(process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN);
+        if (!hasDbEnv) {
+          return {
+            attendanceMarked: false,
+            pupilCount: 0,
+            pendingLoans: 0,
+            recentReports: [],
+            className: classId
+          };
+        }
+
+        try {
         const [
             attendanceCheck,
             pupilCount,
@@ -38,6 +50,15 @@ export async function getStaffDashboardData(email: string, classId: string) {
             recentReports,
             className: classDetails[0]?.name || classId 
           };
+        } catch {
+          return {
+            attendanceMarked: false,
+            pupilCount: 0,
+            pendingLoans: 0,
+            recentReports: [],
+            className: classId
+          };
+        }
     },
     [`staff-dashboard-${email}-${classId}`],
     { revalidate: 30 }

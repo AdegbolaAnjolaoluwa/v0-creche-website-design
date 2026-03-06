@@ -46,6 +46,8 @@ export default async function StaffDashboard() {
       
   const email = user.emailAddresses[0]?.emailAddress
   const classId = (user.publicMetadata.classId as string) || "Nursery 2" // Default fallback
+
+  if (!email) redirect("/login")
   
   const data = await getStaffDashboardData(email, classId)
 
