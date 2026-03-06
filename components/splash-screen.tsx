@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Image from "next/image"
-import { Fredoka, Inter } from "next/font/google"
 import { Loader2 } from "lucide-react"
-
-const fredoka = Fredoka({ subsets: ["latin"], variable: "--font-fredoka" })
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
 interface SplashScreenProps {
   onComplete?: () => void
@@ -19,7 +15,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
     const timer = setTimeout(() => {
       setIsVisible(false)
       if (onComplete) onComplete()
-    }, 2500) // Show for 2.5 seconds
+    }, 2500)
 
     return () => clearTimeout(timer)
   }, [onComplete])
@@ -27,7 +23,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
   if (!isVisible) return null
 
   return (
-    <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-white ${inter.variable} ${fredoka.variable} font-sans`}>
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white font-sans">
       <div className="animate-in fade-in zoom-in duration-700 flex flex-col items-center">
         <div className="relative mb-8 p-6 bg-white rounded-full shadow-2xl ring-4 ring-[#1e2b6d]/5 animate-bounce-slow">
           <Image
@@ -40,7 +36,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
           />
         </div>
         
-        <h1 className={`text-3xl font-bold text-[#1e2b6d] tracking-tight mb-2 ${fredoka.className} animate-pulse`}>
+        <h1 className="text-3xl font-bold text-[#1e2b6d] tracking-tight mb-2 animate-pulse">
           Bayhood Preparatory School
         </h1>
         <p className="text-slate-500 font-medium text-lg animate-pulse delay-100">
@@ -52,7 +48,6 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
         </div>
       </div>
 
-      {/* Background decoration similar to login */}
       <div className="absolute inset-0 -z-10 bg-[#eff6ff] opacity-50">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(#1e2b6d_1px,transparent_1px)] [background-size:20px_20px] opacity-[0.03]"></div>
       </div>
