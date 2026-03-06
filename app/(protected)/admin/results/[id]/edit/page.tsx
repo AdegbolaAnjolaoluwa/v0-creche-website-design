@@ -509,7 +509,7 @@ export default function EditResult() {
                                 </p>
                               </div>
                               <div className="mt-4 p-4 border rounded-md bg-muted/10">
-                                <h4 className="font-medium mb-2">Proprietress's Comment</h4>
+                                <h4 className="font-medium mb-2">Head Teacher's Comment</h4>
                                 <p className="text-sm whitespace-pre-line">
                                   {proprietressComment || "No comment provided."}
                                 </p>
@@ -544,15 +544,15 @@ export default function EditResult() {
 
                     <Card className="mb-8">
                     <CardHeader>
-                        <CardTitle>Proprietress's Comment</CardTitle>
-                        <CardDescription>Add or update the proprietress's comment.</CardDescription>
+                        <CardTitle>Head Teacher's Comment</CardTitle>
+                        <CardDescription>Add or update the head teacher's comment.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-2">
-                        <Label htmlFor="proprietress-comment">Proprietress's Comment</Label>
+                        <Label htmlFor="proprietress-comment">Head Teacher's Comment</Label>
                         <Textarea
                             id="proprietress-comment"
-                            placeholder="Write a comment from the proprietress"
+                            placeholder="Write a comment from the head teacher"
                             value={proprietressComment}
                             onChange={(e) => setProprietressComment(e.target.value)}
                             rows={3}

@@ -24,15 +24,26 @@ export const classes = sqliteTable('classes', {
 
 // Pupils Table
 export const pupils = sqliteTable('pupils', {
-  id: text('id').primaryKey(),
+  id: text('id').primaryKey(), // BPS-XXX
   name: text('name').notNull(),
   classId: text('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }), // Linked to class ID/Name
   gender: text('gender').notNull(),
   dateOfBirth: text('date_of_birth').notNull(),
   guardians: text('guardians').notNull(), // JSON string of guardians array
   enrollmentDate: text('enrollment_date').notNull(),
+  // Parent Login Fields
+  parentPassword: text('parent_password').notNull(), // Hashed
+  isFirstLogin: integer('is_first_login', { mode: 'boolean' }).notNull().default(true),
+  portalAccess: integer('portal_access', { mode: 'boolean' }).notNull().default(true),
+  accessBlockReason: text('access_block_reason'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
+});
+
+// Pupil ID Sequence Table
+export const pupilIdSequence = sqliteTable('pupil_id_sequence', {
+  id: integer('id').primaryKey(), // Single row, ID 1
+  currentValue: integer('current_value').notNull().default(0),
 });
 
 // Results Table

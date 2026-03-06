@@ -8,12 +8,8 @@ import Link from "next/link"
 import { useSignUp, useSignIn, useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { AtSign, Lock, Eye, EyeOff, Loader2, AlertCircle, ArrowLeft } from "lucide-react"
-import { Fredoka, Inter } from "next/font/google"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useEffect } from "react"
-
-const fredoka = Fredoka({ subsets: ["latin"], variable: "--font-fredoka" })
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
 export default function SignUpPage() {
   const { isLoaded, signUp, setActive } = useSignUp()
@@ -186,7 +182,7 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className={`min-h-screen flex items-center justify-center p-6 bg-[#eff6ff] vibrant-pattern overflow-x-hidden ${fredoka.variable} ${inter.variable} font-sans`}>
+    <div className="min-h-screen flex items-center justify-center p-6 bg-[#eff6ff] vibrant-pattern overflow-x-hidden font-sans">
       <style jsx global>{`
         .vibrant-pattern {
           background-color: #eff6ff;
@@ -237,7 +233,7 @@ export default function SignUpPage() {
             />
           </div>
           <div className="relative">
-            <h1 className={`text-4xl font-bold text-[#1e2b6d] tracking-tight ${fredoka.className}`}>
+            <h1 className="text-4xl font-bold text-[#1e2b6d] tracking-tight">
                {pendingVerification ? "Verify Email" : "Create Account"}
             </h1>
             <p className="text-slate-600 mt-2 font-medium">
@@ -376,9 +372,12 @@ export default function SignUpPage() {
             </div>
         </div>
 
-        <div className="mt-8 text-center">
-           <p className="text-xs font-medium text-slate-500">© 2024 Bayhood Preparatory School. All rights reserved.</p>
-        </div>
+      {/* Footer Text */}
+      <div className="fixed bottom-6 w-full text-center z-10 pointer-events-none">
+          <p className="text-xs text-slate-500 font-medium bg-white/40 px-6 py-2 rounded-full backdrop-blur-sm border border-white/50 w-fit mx-auto">
+              © {new Date().getFullYear()} Bayhood Preparatory School. All rights reserved.
+          </p>
+      </div>
 
       </div>
     </div>

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { pupils } from "@/lib/schema";
 import { eq } from "drizzle-orm";
-import { signParentToken } from "@/lib/auth-utils";
+import { signParentToken, verifyPassword } from "@/lib/auth-utils";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
@@ -64,16 +64,32 @@ export async function POST(req: NextRequest) {
 
     const foundPupil = pupil[0];
 
-    // 3. Verify Password (Date of Birth)
-    if (foundPupil.dateOfBirth !== password) {
+    // 3. Verify Password (Hashed)
+    const isValid = verifyPassword(password, foundPupil.parentPassword);
+    if (!isValid) {
          return NextResponse.json({ error: "Invalid Credentials" }, { status: 401 });
     }
 
-    // 4. Generate JWT
-    const token = await signParentToken({ pupilId: foundPupil.id });
+    // 4. Check Portal Access
+    if (!foundPupil.portalAccess) {
+      return NextResponse.json({ 
+        error: "Access Restricted", 
+        blocked: true, 
+        reason: foundPupil.accessBlockReason || "Please contact the school for more information." 
+      }, { status: 403 });
+    }
 
-    // 5. Set Cookie
-    const response = NextResponse.json({ success: true });
+    // 5. Generate JWT
+    const token = await signParentToken({ 
+      pupilId: foundPupil.id, 
+      isFirstLogin: foundPupil.isFirstLogin 
+    });
+
+    // 6. Set Cookie
+    const response = NextResponse.json({ 
+      success: true, 
+      isFirstLogin: foundPupil.isFirstLogin 
+    });
     response.cookies.set("parent_session", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",

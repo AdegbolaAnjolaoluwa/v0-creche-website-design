@@ -200,7 +200,7 @@ export function HomeLoginSection() {
               </Button>
 
               <div className="pt-4 text-center">
-                  <p className="text-xs text-gray-400 font-medium">© 2024 Bayhood Preparatory School. Authorized Staff Only.</p>
+                  <p className="text-xs text-gray-400 font-medium">© {new Date().getFullYear()} Bayhood Preparatory School. Authorized Staff Only.</p>
               </div>
             </form>
           </TabsContent>
@@ -262,7 +262,7 @@ export function HomeLoginSection() {
 
               <div className="pt-4 text-center space-y-2">
                   <p className="text-sm text-gray-600">New to Bayhood? <a href="#" className="font-bold text-blue-600 hover:underline">Register here</a></p>
-                  <p className="text-xs text-gray-400 font-medium">© 2024 Bayhood Preparatory School. All rights reserved.</p>
+                  <p className="text-xs text-gray-400 font-medium">© {new Date().getFullYear()} Bayhood Preparatory School. All rights reserved.</p>
               </div>
             </form>
           </TabsContent>

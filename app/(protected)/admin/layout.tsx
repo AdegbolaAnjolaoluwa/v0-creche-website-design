@@ -3,10 +3,6 @@
 import { useState } from "react"
 import AdminSidebar from "@/components/admin-sidebar"
 import { AdminHeader } from "@/components/admin-header"
-import { Fredoka, Inter } from "next/font/google"
-
-const fredoka = Fredoka({ subsets: ["latin"], variable: "--font-fredoka" })
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
 export default function AdminLayout({
   children,
@@ -16,7 +12,7 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className={`min-h-screen bg-gray-50/50 font-sans ${inter.variable} ${fredoka.variable}`}>
+    <div className="min-h-screen bg-gray-50/50 font-sans">
       <AdminHeader onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
       
       <div className="flex pt-20">

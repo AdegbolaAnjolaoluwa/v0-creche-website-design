@@ -190,35 +190,35 @@ export default function Home() {
               {[
                 {
                   title: "Creche",
-                  age: "3 months - 2 years",
+                  age: "3 months - 18 months",
                   desc: "Focused on nurturing care, sensory play, and early development milestones.",
                   icon: Baby,
                   color: "text-pink-500",
                   bg: "bg-pink-100"
                 },
                 {
-                  title: "Nursery 1",
-                  age: "2 - 3 years",
-                  desc: "Introducing structured learning through play, basic concepts, and social skills.",
-                  icon: Sprout,
-                  color: "text-green-500",
-                  bg: "bg-green-100"
+                  title: "Playgroup",
+                  age: "18 months - 3 years",
+                  desc: "Gentle introduction to school focused on social skills, music, and guided play.",
+                  icon: Gamepad2,
+                  color: "text-orange-500",
+                  bg: "bg-orange-100"
                 },
                 {
                   title: "Preschool",
-                  age: "3 - 5 years",
+                  age: "3 - 4 years",
                   desc: "Strengthening pre-reading, writing, and early mathematics through structured play.",
                   icon: School,
                   color: "text-blue-500",
                   bg: "bg-blue-100"
                 },
                 {
-                  title: "Playgroup",
-                  age: "Short days",
-                  desc: "Gentle introduction to school with short days focused on social skills, music, and guided play.",
-                  icon: Gamepad2,
-                  color: "text-orange-500",
-                  bg: "bg-orange-100"
+                  title: "Nursery",
+                  age: "4 - 5 years",
+                  desc: "Advanced structured learning preparing children for primary education with confidence.",
+                  icon: Sprout,
+                  color: "text-green-500",
+                  bg: "bg-green-100"
                 }
               ].map((program, i) => (
                 <Card key={i} className="flex flex-col border-none shadow-sm hover:shadow-md transition-shadow">
@@ -237,7 +237,8 @@ export default function Home() {
                     </p>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground mt-auto">
                       <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" /> 7:00 AM - 1:00 PM
+                        <Clock className="h-3 w-3" /> 
+                        {program.title === "Creche" ? "7:00 AM - 6:00 PM" : "7:00 AM - 2:00 PM"}
                       </div>
                     </div>
                     <Button variant="outline" className="w-full mt-6">
@@ -320,14 +321,18 @@ export default function Home() {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                <Button variant="outline" className="h-12 px-8 rounded-full shadow-sm bg-white hover:bg-gray-50">
-                  <Mail className="mr-2 h-4 w-4" />
-                  Email Us
-                </Button>
-                <Button variant="outline" className="h-12 px-8 rounded-full shadow-sm bg-white hover:bg-gray-50">
-                  <Phone className="mr-2 h-4 w-4" />
-                  Call Support
-                </Button>
+                <a href="mailto:bayhoodpreperatoryschool@gmail.com">
+                  <Button variant="outline" className="h-12 px-8 rounded-full shadow-sm bg-white hover:bg-gray-50">
+                    <Mail className="mr-2 h-4 w-4" />
+                    bayhoodpreperatoryschool@gmail.com
+                  </Button>
+                </a>
+                <a href="tel:08098112378">
+                  <Button variant="outline" className="h-12 px-8 rounded-full shadow-sm bg-white hover:bg-gray-50">
+                    <Phone className="mr-2 h-4 w-4" />
+                    0809 811 2378
+                  </Button>
+                </a>
               </div>
             </div>
           </div>
@@ -339,7 +344,7 @@ export default function Home() {
         <div className="container px-4 md:px-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-lg font-bold text-white"><span className="text-blue-400">Bay</span><span className="text-red-400">hood</span></span>
-            <span>© 2024 Bayhood Preparatory School. All rights reserved.</span>
+            <span>© {new Date().getFullYear()} Bayhood Preparatory School. All rights reserved.</span>
           </div>
           <div className="flex gap-6">
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>

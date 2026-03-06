@@ -6,16 +6,13 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useSignIn, useUser, useOrganizationList, useClerk } from "@clerk/nextjs"
-import { AtSign, Lock, GraduationCap, Baby, Sprout, Rocket, User, ArrowRight, ArrowLeft, Loader2, AlertCircle, Mail, School } from "lucide-react"
-import { Fredoka, Inter } from "next/font/google"
+import { AtSign, Lock, GraduationCap, Baby, Sprout, Rocket, User, ArrowRight, ArrowLeft, Loader2, AlertCircle, Mail, School, Eye, EyeOff } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-
-const fredoka = Fredoka({ subsets: ["latin"], variable: "--font-fredoka" })
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+import { SplashScreen } from "@/components/splash-screen"
 
 export default function LoginPage() {
   const { isLoaded, signIn, setActive } = useSignIn()
@@ -29,6 +26,8 @@ export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<"staff" | "parent">((tabParam as "staff" | "parent") || "staff")
 
   const unauthorized = searchParams.get("unauthorized")
+  
+  const [showSplash, setShowSplash] = useState(false)
 
   // Auto-redirect if already signed in
   const { isSignedIn, user } = useUser()
@@ -46,6 +45,9 @@ export default function LoginPage() {
         return; 
       }
 
+      // If we are showing splash, don't redirect yet
+      if (showSplash) return;
+
       const role = (user.publicMetadata as any)?.role
 
       if (role === 'org:admin') {
@@ -61,10 +63,11 @@ export default function LoginPage() {
         return
       }
     }
-  }, [isSignedIn, user, router, unauthorized])
+  }, [isSignedIn, user, router, unauthorized, showSplash])
 
   const [identifier, setIdentifier] = useState("") 
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -84,11 +87,13 @@ export default function LoginPage() {
         })
         
         if (res.ok) {
-             router.push(`/parent/dashboard`)
-             router.refresh()
+             setShowSplash(true)
+             // Splash screen will handle navigation via onComplete or we can do it after delay
+             // For consistency with component, let's use the component's timer
         } else {
             const data = await res.json()
             setError(data.error || "Invalid Pupil ID or Password")
+            setIsLoading(false)
         }
 
       } else {
@@ -99,23 +104,48 @@ export default function LoginPage() {
         })
 
         if (result.status === "complete") {
+          setShowSplash(true)
           await setActive({ session: result.createdSessionId })
-          router.push("/staff/dashboard")
+          // Redirect handled by useEffect once user is loaded with metadata
         } else {
           console.error(result)
           setError("Invalid email or password")
+          setIsLoading(false) // Only stop loading on error
         }
       }
     } catch (err: any) {
       console.error("Login error:", err)
       setError(err.errors?.[0]?.message || "Invalid credentials")
-    } finally {
       setIsLoading(false)
+    }
+    // Remove finally block to keep loading state true on success while redirecting
+  }
+
+  const handleSplashComplete = () => {
+    // Determine where to go based on tab or role
+    if (activeTab === "parent") {
+        router.push("/parent/dashboard")
+        router.refresh()
+    } else {
+        // For staff, rely on the useEffect redirect after user metadata is loaded
+        // But we need to disable splash state so the useEffect can trigger
+        setShowSplash(false)
+        
+        // Fallback if metadata takes too long or is missing
+        if (isSignedIn) {
+            const role = (user?.publicMetadata as any)?.role
+            if (role === 'org:admin') router.push("/admin/dashboard")
+            else if (role === 'org:staff') router.push("/staff/dashboard")
+        }
     }
   }
 
+  if (showSplash) {
+    return <SplashScreen onComplete={handleSplashComplete} />
+  }
+
   return (
-    <div className={`min-h-screen flex items-center justify-center p-4 font-sans relative overflow-hidden ${inter.variable} ${fredoka.variable}`}>
+    <div className="min-h-screen flex items-center justify-center p-4 font-sans relative overflow-hidden">
       
       {/* Background Pattern */}
       <div className="absolute inset-0 -z-10 bg-[#eff6ff]">
@@ -138,7 +168,7 @@ export default function LoginPage() {
                     className="h-20 w-auto object-contain mx-auto"
                 />
             </div>
-            <h1 className="text-4xl font-bold text-[#1e2b6d] tracking-tight font-display">
+            <h1 className="text-4xl font-bold text-[#1e2b6d] tracking-tight">
                 {activeTab === 'staff' ? 'Staff & Admin Portal' : 'Parent Portal Login'}
             </h1>
             <p className="text-slate-600 mt-2 font-medium">
@@ -197,13 +227,20 @@ export default function LoginPage() {
                 </div>
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:ring-0 focus:border-[#1e2b6d] transition-all outline-none text-sm font-medium h-auto"
+                  className="w-full pl-12 pr-12 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:ring-0 focus:border-[#1e2b6d] transition-all outline-none text-sm font-medium h-auto"
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#1e2b6d] transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
             </div>
 
@@ -238,7 +275,7 @@ export default function LoginPage() {
         
         {/* Footer Text */}
         <p className="mt-10 text-xs text-center text-slate-500 font-medium bg-white/40 px-6 py-2 rounded-full backdrop-blur-sm border border-white/50 w-fit mx-auto">
-            © 2024 Bayhood Preparatory School. All rights reserved.
+            © {new Date().getFullYear()} Bayhood Preparatory School. All rights reserved.
         </p>
       </div>
 

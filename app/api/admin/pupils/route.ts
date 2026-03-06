@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { pupils } from "@/lib/schema";
+import { pupils, pupilIdSequence } from "@/lib/schema";
 import { auth } from "@clerk/nextjs/server";
 import { eq, sql } from "drizzle-orm";
-import { nanoid } from "nanoid";
-import { pupilsData } from "@/lib/data";
+import { hashPassword } from "@/lib/auth-utils";
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,29 +14,6 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const classId = searchParams.get("classId");
-
-    // Check if pupils table is empty
-    const countResult = await db.select({ count: sql<number>`count(*)` }).from(pupils);
-    const count = countResult[0].count;
-
-    if (count === 0) {
-      console.log("Seeding pupils database...");
-      const pupilsToInsert = pupilsData.map(p => ({
-        id: p.id,
-        name: p.name,
-        classId: p.class, // Map class name to classId for now
-        gender: p.gender,
-        dateOfBirth: p.dateOfBirth,
-        guardians: JSON.stringify(p.guardians),
-        enrollmentDate: p.enrollmentDate,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      }));
-      
-      if (pupilsToInsert.length > 0) {
-        await db.insert(pupils).values(pupilsToInsert);
-      }
-    }
 
     let query = db.select().from(pupils);
     
@@ -71,14 +47,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    // Auto-generate Pupil ID (BPS-XXX)
+    // 1. Get next sequence value
+    const sequence = await db.select().from(pupilIdSequence).where(eq(pupilIdSequence.id, 1));
+    let nextVal = 1;
+
+    if (sequence.length === 0) {
+      await db.insert(pupilIdSequence).values({ id: 1, currentValue: 1 });
+    } else {
+      nextVal = sequence[0].currentValue + 1;
+      await db.update(pupilIdSequence).set({ currentValue: nextVal }).where(eq(pupilIdSequence.id, 1));
+    }
+
+    const pupilId = `BPS-${nextVal.toString().padStart(3, '0')}`;
+    const defaultPassword = hashPassword(pupilId);
+
     const newPupil = {
-      id: nanoid(),
+      id: pupilId,
       name,
       classId,
       gender,
       dateOfBirth,
       guardians: JSON.stringify(guardians || []),
       enrollmentDate,
+      parentPassword: defaultPassword,
+      isFirstLogin: true,
+      portalAccess: true,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };

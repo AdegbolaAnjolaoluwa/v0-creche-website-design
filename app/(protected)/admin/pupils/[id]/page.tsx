@@ -3,13 +3,17 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Clock, FileText, Phone, User } from "lucide-react"
+import { ArrowLeft, Clock, FileText, Phone, User, Shield, AlertTriangle } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 import { pupilsData, type Pupil, type ResultRecord } from "@/lib/data"
 
@@ -25,20 +29,47 @@ type PupilAttendanceRecord = {
   createdAt: string
 }
 
+type ExtendedPupil = Pupil & {
+  portalAccess?: boolean
+  accessBlockReason?: string
+}
+
 export default function PupilProfilePage() {
   const router = useRouter()
   const params = useParams()
   const pupilId = params.id as string
   
-  const [pupil, setPupil] = useState<Pupil | null>(null)
+  const [pupil, setPupil] = useState<ExtendedPupil | null>(null)
   const [attendance, setAttendance] = useState<PupilAttendanceRecord[]>([])
   const [results, setResults] = useState<ResultRecord[]>([])
+  
+  // Portal Access State
+  const [portalAccess, setPortalAccess] = useState(true)
+  const [blockReason, setBlockReason] = useState("")
+  const [isAccessDialogOpen, setIsAccessDialogOpen] = useState(false)
+  const [isUpdatingAccess, setIsUpdatingAccess] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
-        // 1. Find Pupil (Mock for now, ideally API)
-        const foundPupil = pupilsData.find(p => p.id === pupilId)
-        setPupil(foundPupil || null)
+        // 1. Find Pupil
+        try {
+            // Fetch from API to get portal access status
+            const res = await fetch(`/api/admin/pupils/${pupilId}`)
+            if (res.ok) {
+                const data = await res.json()
+                setPupil(data)
+                setPortalAccess(data.portalAccess ?? true)
+                setBlockReason(data.accessBlockReason || "")
+            } else {
+                // Fallback to static data if API fails or not found (for dev)
+                const foundPupil = pupilsData.find(p => p.id === pupilId)
+                setPupil(foundPupil || null)
+            }
+        } catch (e) {
+            console.error("Failed to fetch pupil", e)
+            const foundPupil = pupilsData.find(p => p.id === pupilId)
+            setPupil(foundPupil || null)
+        }
 
         // 2. Load Attendance from API
         try {
@@ -86,6 +117,43 @@ export default function PupilProfilePage() {
     
     fetchData()
   }, [pupilId])
+
+  const handleAccessToggle = (checked: boolean) => {
+    if (!checked) {
+      // If turning OFF, open dialog to ask for reason
+      setIsAccessDialogOpen(true)
+    } else {
+      // If turning ON, update directly
+      updatePortalAccess(true, "")
+    }
+  }
+
+  const updatePortalAccess = async (access: boolean, reason: string) => {
+    setIsUpdatingAccess(true)
+    try {
+      const res = await fetch(`/api/admin/pupils/${pupilId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          portalAccess: access,
+          accessBlockReason: reason
+        })
+      })
+
+      if (res.ok) {
+        setPortalAccess(access)
+        if (!access) setBlockReason(reason)
+        setIsAccessDialogOpen(false)
+      } else {
+        alert("Failed to update portal access")
+      }
+    } catch (e) {
+      console.error("Error updating access", e)
+      alert("Error updating portal access")
+    } finally {
+      setIsUpdatingAccess(false)
+    }
+  }
 
   if (!pupil) {
     return (
@@ -147,6 +215,35 @@ export default function PupilProfilePage() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              <div className="pt-4 border-t space-y-3">
+                <h4 className="font-semibold mb-2 text-sm flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-primary" />
+                  Parent Portal Access
+                </h4>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="portal-access" className="text-sm text-muted-foreground">
+                    Enable Access
+                  </Label>
+                  <Switch 
+                    id="portal-access" 
+                    checked={portalAccess}
+                    onCheckedChange={handleAccessToggle}
+                    disabled={isUpdatingAccess}
+                  />
+                </div>
+                {!portalAccess && blockReason && (
+                  <div className="bg-red-50 p-3 rounded-md border border-red-100 mt-2">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-medium text-red-800">Access Blocked</p>
+                        <p className="text-xs text-red-700 mt-1">{blockReason}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -285,6 +382,38 @@ export default function PupilProfilePage() {
             </Tabs>
           </div>
         </div>
+
+        <Dialog open={isAccessDialogOpen} onOpenChange={setIsAccessDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Block Portal Access</DialogTitle>
+              <DialogDescription>
+                Please provide a reason for blocking this parent's access to the portal.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="reason">Reason (Required)</Label>
+                <Input 
+                  id="reason" 
+                  placeholder="e.g. Outstanding school fees" 
+                  value={blockReason}
+                  onChange={(e) => setBlockReason(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAccessDialogOpen(false)}>Cancel</Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => updatePortalAccess(false, blockReason)}
+                disabled={!blockReason.trim() || isUpdatingAccess}
+              >
+                {isUpdatingAccess ? "Blocking..." : "Block Access"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
     </div>
   )
 }

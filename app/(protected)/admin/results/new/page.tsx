@@ -524,15 +524,15 @@ export default function NewResult() {
                 {currentUser?.role === "admin" && (
                   <Card className="mb-8">
                     <CardHeader>
-                      <CardTitle>Proprietress's Comment</CardTitle>
-                      <CardDescription>Add a comment from the school proprietress.</CardDescription>
+                      <CardTitle>Head Teacher's Comment</CardTitle>
+                      <CardDescription>Add a comment from the school head teacher.</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
-                        <Label htmlFor="proprietress-comment">Proprietress's Comment</Label>
+                        <Label htmlFor="proprietress-comment">Head Teacher's Comment</Label>
                         <Textarea
                           id="proprietress-comment"
-                          placeholder="Write a comment from the proprietress"
+                          placeholder="Write a comment from the head teacher"
                           value={proprietressComment}
                           onChange={(e) => setProprietressComment(e.target.value)}
                           rows={3}
