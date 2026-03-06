@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowRight, BookOpen, GraduationCap, Music, Palette, Shapes, Users } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -9,8 +10,13 @@ export default function ProgramsPage() {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <GraduationCap className="h-6 w-6" />
-          <span>Little Learners</span>
+          <Image
+            src="/logo.jpg"
+            alt="Bayhood Preparatory School logo"
+            width={220}
+            height={66}
+            className="h-14 w-auto"
+          />
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           <Link href="/" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
@@ -60,7 +66,7 @@ export default function ProgramsPage() {
               <div>
                 <h2 className="text-3xl font-bold tracking-tight mb-4">Our Curriculum</h2>
                 <p className="text-muted-foreground mb-4">
-                  At Little Learners, we follow a play-based curriculum that integrates elements from various
+                  At Bayhood Preparatory School, we follow a play-based curriculum that integrates elements from various
                   educational philosophies, including Montessori, Reggio Emilia, and traditional approaches. This
                   balanced method ensures children develop holistically across all developmental domains.
                 </p>
@@ -96,7 +102,7 @@ export default function ProgramsPage() {
             <div className="text-center mb-10">
               <h2 className="text-3xl font-bold tracking-tight">Our Classes</h2>
               <p className="mt-4 text-muted-foreground md:text-lg">
-                Age-appropriate programs designed to meet the developmental needs of each stage
+                Age appropriate programs designed to meet the developmental needs of each stage
               </p>
             </div>
             <div className="grid gap-8 md:grid-cols-3">
@@ -132,12 +138,12 @@ export default function ProgramsPage() {
                   <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
                     <Palette className="h-6 w-6 text-primary" />
                   </div>
-                  <CardTitle>Nursery 1</CardTitle>
+                  <CardTitle>Nursery</CardTitle>
                   <CardDescription>Ages 2-3 years</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="mb-4">
-                    Nursery 1 introduces more structured learning while maintaining a play-based approach. Our program
+                    Nursery introduces more structured learning while maintaining a play-based approach. Our program
                     includes:
                   </p>
                   <ul className="list-disc pl-6 space-y-1 text-sm">
@@ -313,7 +319,7 @@ export default function ProgramsPage() {
           <div className="flex flex-col gap-2">
             <Link href="/" className="flex items-center gap-2 font-semibold">
               <GraduationCap className="h-6 w-6" />
-              <span>Little Learners</span>
+              <span>Bayhood Preparatory School</span>
             </Link>
             <p className="text-sm text-muted-foreground">Nurturing young minds since 2010</p>
           </div>
@@ -337,10 +343,9 @@ export default function ProgramsPage() {
               Contact
             </Link>
           </nav>
-          <div className="text-sm text-muted-foreground">© 2023 Little Learners. All rights reserved.</div>
+          <div className="text-sm text-muted-foreground">© 2023 Bayhood Preparatory School. All rights reserved.</div>
         </div>
       </footer>
     </div>
   )
 }
-

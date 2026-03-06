@@ -72,12 +72,12 @@ export default function AboutPage() {
                 </p>
                 <p className="text-muted-foreground">
                   Today, Little Learners continues to uphold these founding principles while incorporating modern
-                  educational approaches and technology to prepare our students for the future.
+                  educational approaches and technology to prepare our pupils for the future.
                 </p>
               </div>
               <div className="rounded-lg overflow-hidden">
                 <img
-                  src="/placeholder.svg?height=400&width=600"
+                  src="/placeholder.svg"
                   alt="Children playing and learning in a classroom"
                   className="w-full h-auto object-cover"
                 />
@@ -167,10 +167,10 @@ export default function AboutPage() {
                 <CardHeader>
                   <img
                     src="/placeholder.svg?height=200&width=200"
-                    alt="Mr. David Wilson"
+                    alt="Damisa Yetunde Halimat"
                     className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
                   />
-                  <CardTitle className="text-center">Mr. David Wilson</CardTitle>
+                  <CardTitle className="text-center">Damisa Yetunde Halimat</CardTitle>
                   <CardDescription className="text-center">Head Teacher, Nursery 2</CardDescription>
                 </CardHeader>
                 <CardContent className="text-center">
@@ -184,10 +184,10 @@ export default function AboutPage() {
                 <CardHeader>
                   <img
                     src="/placeholder.svg?height=200&width=200"
-                    alt="Ms. Sarah Williams"
+                    alt="Omotosho Mary"
                     className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
                   />
-                  <CardTitle className="text-center">Ms. Sarah Williams</CardTitle>
+                  <CardTitle className="text-center">Omotosho Mary</CardTitle>
                   <CardDescription className="text-center">Head Teacher, Nursery 1</CardDescription>
                 </CardHeader>
                 <CardContent className="text-center">
@@ -213,7 +213,7 @@ export default function AboutPage() {
             <div className="grid gap-10 lg:grid-cols-2 lg:gap-16 items-center">
               <div className="rounded-lg overflow-hidden">
                 <img
-                  src="/placeholder.svg?height=400&width=600"
+                  src="/placeholder.svg"
                   alt="Our facilities with playground and classrooms"
                   className="w-full h-auto object-cover"
                 />
@@ -277,4 +277,3 @@ export default function AboutPage() {
     </div>
   )
 }
-
